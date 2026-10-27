@@ -1,0 +1,25 @@
+# 데이터 레이어 (L0~L3, 스필) — 절대 커밋 금지 (CLAUDE.md §3, §10)
+data/
+
+# 원본 참고 데이터 (Raw CSV)
+reference/
+
+# L4 산출물은 공유 경로로 배포, 저장소에는 넣지 않음
+outputs/*
+!outputs/.gitkeep
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# 대용량·압축 파일 안전망
+*.csv.gz
+*.parquet
+*.duckdb
+*.duckdb.wal
+
+# macOS
+.DS_Store

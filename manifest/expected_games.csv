@@ -1,0 +1,17 @@
+tournament,stage,matches,games_min,games_max,status,lck_team_involved,lck_team_games,note
+LCK_Cup,Group,25,71,71,confirmed,all,71,
+LCK_Cup,PlayIn,5,13,13,confirmed,all,13,
+LCK_Cup,Playoffs,10,41,41,confirmed,all,41,우승 GEN
+FirstStand,Group,10,35,35,confirmed,partial,17,BFX 11 + GEN 6 (A/B조 1R·패자조·진출전)
+FirstStand,Knockout,3,10,10,confirmed,partial,3,GEN 4강 3게임. 우승 BLG
+LCK_R1-2,Regular,90,204,204,confirmed,all,204,더블 라운드 로빈
+Road_to_MSI,Qualifier,5,20,20,confirmed,all,20,HLE·T1 진출
+MSI,PlayIn,6,18,18,confirmed,partial,,MSI 전체 LCK 41게임(T1 21·HLE 20); 스테이지별 분할 미확인
+MSI,Bracket,14,53,53,confirmed,partial,,MSI 전체 LCK 41게임(T1 21·HLE 20); 스테이지별 분할 미확인. 우승 HLE
+LCK_R3-4,Legend,20,50,50,confirmed,all,50,
+LCK_R3-4,Rise,20,49,49,confirmed,all,49,
+LCK_PlayIn_PO,PlayIn,3,14,14,confirmed,all,14,
+LCK_PlayIn_PO,Playoffs,10,41,41,confirmed,all,41,우승 GEN
+Worlds,PlayIn,6,22,22,confirmed,partial,,LCK 출전 게임 수 미집계
+Worlds,Swiss,33,47,56,in_progress,partial,,1~3R 24매치·29게임 확정; 4~5R 9매치(BO3) 잔여
+Worlds,Knockout,7,21,35,in_progress,partial,,BO5 7매치 잔여 (11/14 결승)
