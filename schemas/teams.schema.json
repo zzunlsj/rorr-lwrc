@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LwRC+ teams output",
+  "type": "object",
+  "required": ["version", "generated_at", "allocation_method", "g_model_version", "teams"],
+  "properties": {
+    "version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "allocation_method": { "enum": ["prior", "regression"] },
+    "g_model_version": { "type": "string" },
+    "teams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["scope", "team", "lg", "W", "L", "sw", "sl", "sd", "wr", "form", "g", "ix", "pg", "top_role"],
+        "properties": {
+          "scope": { "enum": ["all", "lck", "lck_s1", "lck_s2", "lck_s3", "fs", "msi", "worlds"] },
+          "team": { "type": "string" },
+          "lg": { "type": "string" },
+          "W": { "type": "integer", "minimum": 0, "description": "match (series) wins" },
+          "L": { "type": "integer", "minimum": 0, "description": "match (series) losses" },
+          "sw": { "type": "integer", "minimum": 0, "description": "game wins" },
+          "sl": { "type": "integer", "minimum": 0, "description": "game losses" },
+          "sd": { "type": "integer", "description": "sw - sl" },
+          "wr": { "type": "number", "minimum": 0, "maximum": 1 },
+          "form": { "type": "string", "pattern": "^[WL]{0,5}$" },
+          "g": { "type": "integer", "minimum": 0 },
+          "ix": { "type": "integer", "description": "Team LwRC+ — minutes-weighted mean of player ix" },
+          "pg": { "type": "integer" },
+          "top_role": { "enum": ["TOP", "JG", "MID", "BOT", "SUP"] }
+        }
+      }
+    }
+  }
+}

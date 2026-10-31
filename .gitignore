@@ -23,3 +23,12 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# rorr-lwrc 사양 저장소에서 병합 (2026-10-31)
+*.tar
+*.tar.gz
+out/
+.env
+
+# 전달받은 압축본
+*.zip

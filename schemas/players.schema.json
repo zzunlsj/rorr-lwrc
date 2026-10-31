@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LwRC+ players output",
+  "type": "object",
+  "required": ["version", "generated_at", "allocation_method", "g_model_version", "players"],
+  "properties": {
+    "version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "allocation_method": { "enum": ["prior", "regression"] },
+    "g_model_version": { "type": "string" },
+    "players": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["scope", "player_id", "name", "team", "lg", "role", "g", "minutes", "ix", "pg", "lwrc", "rate", "c", "d", "risk"],
+        "properties": {
+          "scope": { "enum": ["all", "lck", "lck_s1", "lck_s2", "lck_s3", "fs", "msi", "worlds"] },
+          "player_id": { "type": "string" },
+          "name": { "type": "string" },
+          "team": { "type": "string" },
+          "lg": { "type": "string" },
+          "role": { "enum": ["TOP", "JG", "MID", "BOT", "SUP"] },
+          "g": { "type": "integer", "minimum": 0 },
+          "minutes": { "type": "number", "minimum": 0 },
+          "ix": { "type": "integer", "description": "LwRC+ — 100 x rate / denom(scope, role). Negative allowed." },
+          "pg": { "type": "integer", "description": "Gold +/G — (rate - denom) x minutes / g" },
+          "lwrc": { "type": "number" },
+          "rate": { "type": "number" },
+          "c": { "type": "number" },
+          "d": { "type": "number" },
+          "risk": { "type": "number", "maximum": 0 },
+          "role_rank": { "type": ["integer", "null"] },
+          "role_n": { "type": ["integer", "null"] },
+          "team_share": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+        }
+      }
+    }
+  }
+}

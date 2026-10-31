@@ -1,0 +1,48 @@
+# LwRC+ v1.0 (개정) — 모든 상수. 코드에 상수를 하드코딩하지 말 것.
+
+g:
+  label_horizon_min: 10          # 레이블 = 10분 뒤 팀 골드
+  censor_rate_window_min: 3      # 종료 외삽용 직전 수입 속도 구간
+  train_sample_sec: 30           # 학습 샘플링 간격 (산출은 1Hz)
+  model: linear_ridge
+  crossfit_k: 5                  # 경기 단위
+  holdout_tail_fraction: 0.25    # 시간 홀드아웃 검증용
+
+prior_g:                         # 비교 기준선 전용
+  w_alive: 0.30
+  w_dragon: 0.05
+  w_tower: 0.03
+  w_baron: 0.10
+
+cluster:
+  window_sec: 10
+  merge_sec: 10
+  warn_len_sec: 180
+  seed_monsters: [dragon, baron, riftherald, horde, atakhan]
+
+buffs:
+  baron_sec: 180
+  elder_sec: 150
+
+allocation:
+  method: both                   # both = prior와 regression 모두 산출, 신뢰도로 정본 채택
+  prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision_provided: 0.0, vision_denied: 0.0}
+  dmg_source: frame_delta        # 프레임 누적 챔피언 피해 증가분
+  estimator: nnls_ridge
+  position_specific_beta: false
+  presence_radius: 2300
+  vision_radius: 3300
+  vision_pre_window_sec: 30
+  shrinkage_k: null              # prior 수축의 k — Step 4에서 결정 후 기록
+
+season:
+  year: 2026
+  events: [LCK, FirstStand, MSI, Worlds]
+  output_scopes: [all, lck, lck_s1, lck_s2, lck_s3, fs, msi, worlds]
+  min_games_for_ranking: 10
+  winsorize_sigma: 3
+  length_corr_threshold: 0.2
+  length_buckets_min: [25, 35]   # 층화 시: ≤25 / 25~35 / 35+
+
+identity:
+  epsilon: 1.0
