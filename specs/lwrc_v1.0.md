@@ -1,5 +1,7 @@
 # LwRC / LwRC+ 계산 명세 v1.0 — 초안 (DRAFT)
 
+> **대체됨 (2026-10-31, `docs/decisions.md` 결정 15)**: 정본 사양은 `docs/spec/`·`docs/contracts/`·`config/lwrc.yaml`이다. 이 문서는 리허설(트랙 A/B) 재현 기록으로만 남긴다.
+
 - 상태: **초안, 동결 전.** §9 미결 사항이 확정되어야 동결한다.
 - 작성일: 2026-10-27
 - 출처: `CLAUDE.md` §5, §6, §8, §9 / Notion 설계 문서 (wGE+ 설계, 콜드스타트 설정값 v0.1)

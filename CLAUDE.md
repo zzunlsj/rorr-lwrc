@@ -2,9 +2,13 @@
 
 이 파일은 Claude Code가 이 프로젝트에서 작업할 때 항상 따르는 지침이다. 작업 전에 끝까지 읽는다.
 
+> **작업 기준 (2026-10-31 Jun)**: 이 git 저장소의 문서(`docs/`, `config/`, `specs/`)가 작업 기준이다. Notion은 이력 참고용이며, Notion과 저장소가 다르면 저장소를 따른다. 결정은 `docs/decisions.md`에 기록한다.
+>
+> **정본 (2026-10-31 Jun)**: 모든 작업은 `docs/spec/`·`docs/contracts/`·`config/lwrc.yaml`(§13, v1.0 개정) 기준으로 한다. §8, `specs/lwrc_v1.0.md`, 리허설 결과 등 기존 내용은 **참고용**이다. LwRC+는 선수 퍼포먼스 참고 수치이며, 승률 기준 해석은 다른 수치와 결합해 따로 다룬다.
+
 ## 1. 프로젝트 목적
 
-- RORR(PiePie)의 선수 기여도 지표 **LwRC+ 1.0**을 로컬 Mac mini에서 구현한다.
+- RORR(PiePie)의 선수 퍼포먼스 지표 **LwRC+ 1.0**(v1.0 개정, 정본 `docs/spec/`)을 로컬 Mac mini에서 구현한다.
 - 입력: 개발자 Kazel이 전달하는 **2026 LoL Live Raw data**(RFC 461 계열 라이브 피드, 1Hz `stats_update` + 이벤트).
 - 범위: 2026 LCK 전 일정 + First Stand + MSI + Worlds. **대회 → 스테이지 → 경기** 단위로 구분한다.
 - 산출: LwRC / LwRC+ (경기·선수 단위), 그리고 같은 파이프라인 위의 추가 지표(PCI+, MapPressure 등 — 착수 전 Jun 확인).
@@ -76,7 +80,7 @@ lwrc-local/
 ## 5. 확정된 전처리 규칙 (실측으로 검증됨 — 코드와 테스트로 고정할 것)
 
 1. **`gameTime` 단위는 밀리초.** CSV 행은 **시간순이 보장되지 않는다** → 모든 시계열은 `gameTime` 정렬 필수.
-2. **`epic_monster_kill`에 일반 정글 캠프가 섞여 있다** (raptor, wolf, krug, gromp, redCamp, blueCamp, scuttleCrab). 에픽 판정은 `monsterType ∈ {dragon, baron, riftHerald, VoidGrub}` 필터.
+2. **`epic_monster_kill`에 일반 정글 캠프가 섞여 있다** (raptor, wolf, krug, gromp, redCamp, blueCamp, scuttleCrab). 에픽 판정은 `monsterType ∈ {dragon, baron, riftHerald, VoidGrub}` 필터 (원본 표기 그대로, 공허 유충 = `VoidGrub`. 목록은 `config/lwrc.yaml`, 미분류 이름은 적재 중단).
 3. **장로 드래곤은 `monsterType='dragon'` + `dragonType='elder'`.** `teams.dragonKills`는 장로를 포함하므로 영혼 판정 시 장로를 빼야 한다. 바다 드래곤 raw 값은 `'water'`.
 4. **`deathRecap`은 dict가 아니라 list**: `[{source, casterId, breakdown:[{physicalDmg, magicDmg, trueDmg, ...}]}]`. `source='Champion'`만 남기고 casterId별로 physical+magic+true를 합산. 잘못 파싱하면 배분이 한 명에게 몰리면서 **조용히 오염된다** (실제 발생 이력).
 5. **`champion_kill.bounty`는 109~420 가변.** 셧다운 골드는 별도 필드 `shutdownBounty`.
@@ -113,9 +117,11 @@ QC 실패 경기는 L3 산출에서 제외하고 목록으로 보고한다. 조�
 
 Kazel이 대회 전체를 주는지, LCK 팀 출전 경기만 주는지는 미확정이다. `expected_games.csv`에는 둘 다 표시할 수 있게 `lck_team_involved` 컬럼을 둔다.
 
-## 8. LwRC 계산 개요 (상세는 `specs/lwrc_v1.0.md`, 근거는 Notion)
+## 8. LwRC 계산 개요 — 대체됨 (리허설 기록용)
 
-> **1차 구현 목표는 Notion 정본 v1.0**(https://app.notion.com/p/3ffbc2f961aa817cba6fcc03436d2bb1)이다 (2026-10-27 Jun 확정).
+> **정본 사양은 `docs/spec/`·`docs/contracts/`·`config/lwrc.yaml`이다 (2026-10-31 Jun, `docs/decisions.md` 결정 15).** 이 절과 `specs/lwrc_v1.0.md`는 정본과 다르면 따르지 않는다.
+>
+> (이전 기록) 1차 구현 목표는 Notion 정본 v1.0(https://app.notion.com/p/3ffbc2f961aa817cba6fcc03436d2bb1)이다 (2026-10-27 Jun 확정).
 > 아래 개요는 콜드스타트 v0.1 기준이며, 리허설에서 기존 결과 재현(트랙 A)용으로 유지한다. v1.0과 다른 점(G 형태, 4성분 지분, Risk 시간창, D 규칙)은 `specs/lwrc_v1.0.md`가 우선한다.
 
 - **채널**: C(우리 팀 기대 골드 상승) / D(상대 팀 기대 골드 하락) / Risk(본인 데스로 인한 반대 방향).
@@ -131,7 +137,7 @@ Kazel이 대회 전체를 주는지, LCK 팀 출전 경기만 주는지는 미�
 ## 9. 미결 사항 — 임의로 정하지 말고 반드시 Jun에게 물어볼 것
 
 1. ~~음수 표기 정책~~ → **확정(2026-10-27): 음수 허용, 바닥 처리 없음, 단위 없는 숫자(LwRC+ 126).**
-2. ~~LwRC+ 기준선(=100) 집단~~ → **확정(2026-10-27): 2026 전체 풀 × 포지션.**
+2. ~~LwRC+ 기준선(=100) 집단~~ → **확정: scope별 분모 × 포지션** (`docs/spec/05` §3. 10-27의 "2026 전체 풀"은 결정 15로 대체).
 3. **패치 처리**: 패치를 G의 피처로 넣을지, 구간별로 나눌지.
 4. **추가 지표 범위**: PCI+, MapPressure(19존), WPA 프로토타입 중 무엇을 만들지.
 5. **Raw 수령 범위**: 대회 전체 vs LCK 팀 출전 경기만.
@@ -164,7 +170,7 @@ Kazel이 대회 전체를 주는지, LCK 팀 출전 경기만 주는지는 미�
 
 > `rorr-lwrc.zip`(github.com/zzunlsj/rorr-lwrc, 커밋 18891fc)을 이 저장소에 병합하면서, 그 저장소의 CLAUDE.md를 아래에 옮겨 둔다.
 > **주의**: 이 사양(Notion "LwRC+ v1.0 개정")은 §8·`specs/lwrc_v1.0.md`(Notion 정본 v1.0)와 다른 부분이 있다 — 학습 G, 데스 단위 Risk, 관여 회귀, scope 8개 등.
-> 어느 쪽을 정본으로 할지는 Jun 확인 전이다. 확인 전까지 두 문서의 차이를 임의로 정리하지 않는다.
+> **→ 확정(2026-10-31 Jun): 이 사양(`docs/spec/` 등)이 정본이다** (`docs/decisions.md` 결정 15). 차이가 나면 이 사양을 따른다.
 
 ### (원문) CLAUDE.md — rorr-lwrc
 

@@ -25,10 +25,12 @@
 
 ```
 ward_events(game_id, ward_id, side, ward_type, placer, t_placed, x, z,
-            t_removed, remover, removal_kind)      # removal_kind: killed | expired(추정)
+            t_removed, remover, removal_kind)      # removal_kind: killed | expired(추정) | replaced(설치 한도 초과, 추정)
 ```
 
-- 제거 이벤트가 없는 와드: 종류별 지속시간 규칙으로 만료 추정, `removal_kind = expired`
+- 제거 이벤트가 없는 와드: 종류별 지속시간 규칙으로 만료 추정(`expired`), 설치 한도 초과는 교체 추정(`replaced`) — `config: allocation.ward_rules`, `spec/04` §3
 - 설치·제거를 잇는 키가 없으면 위치·시각 근접성으로 매칭하고 **매칭률을 리포트**
-- raw에 와드 이벤트나 위치가 없으면 → 시야 피처 2종 제외, 4피처 회귀로 진행, 사유 기록
+- `wardType = unknown`은 와드가 아니다(챔피언 고유 설치물) → 시야 피처에서 제외, 제외 건수 리포트 (결정 16)
+- 설치자 ID가 매핑되지 않는 설치(`placer` 미매핑)는 제외, 건수 리포트
+- raw에 와드 이벤트나 위치가 없으면 → 시야 피처 2종 제외, 나머지 피처로 회귀 진행, 사유 기록
 - 대회별로 수집 여부가 다르면 → 결측 게임은 회귀 **학습에서 제외**, 산출은 시야 피처 없이 나머지로만 (0 대체 금지)

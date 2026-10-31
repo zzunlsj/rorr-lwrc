@@ -4,7 +4,7 @@
 
 | # | 결정 | 사양 위치 | 동의 |
 |---|---|---|---|
-| 1 | LwRC+는 승리 지표가 아니라 **퍼포먼스 지표** (승수 환산은 LoL WAR) | `spec/00` | ☐ |
+| 1 | LwRC+는 승리 지표가 아니라 **선수 퍼포먼스 참고 수치** (승률·승리 기준 해석은 다른 수치와 결합해 별도로 — LoL WAR 등) (2026-10-31 Jun) | `spec/00` | ☑ |
 | 2 | 학습 레이블 = **10분 뒤 팀 골드**, 게임 종료 시 양 팀 직전 수입으로 외삽 (승리 보너스 없음) | `spec/01` §1 | ☐ |
 | 3 | Risk = **데스 단위 한계 비용** (데스가 바꾼 것만 반영한 G 차이), 교전 결과와 무관하게 본인 부과 | `spec/03` §1 | ☐ |
 | 4 | 데스 비용을 빼고 남은 음수는 **상대의 정상 획득 → 팀 계정** | `spec/03` §2 | ☐ |
@@ -16,6 +16,14 @@
 | 10 | 팀 LwRC+ = 소속 선수 LwRC+의 **플레이 분 가중 평균** | `contracts/output-web.md` §3 | ☐ |
 | 11 | 팀 내 비중 = **절대 LwRC 기준**, "골드 기여 기준" 표기 | `contracts/output-web.md` §2 | ☐ |
 | 12 | Worlds는 데이터 기간 내 진행분만 포함, 범위 명시 | `spec/06` §1 | ☐ |
+| 13 | **작업 기준 = 이 git 저장소의 문서**. Notion은 이력 참고용 (2026-10-31 Jun) | `CLAUDE.md` | ☑ |
+| 14 | 공허 유충 명칭 = 원본 표기 **`VoidGrub`** (`horde` 쓰지 않음). 몬스터 이름은 원본 표기 그대로, 미분류 이름은 적재 중단 (2026-10-31 Jun) | `spec/02` §1, `config/lwrc.yaml` | ☑ |
+| 15 | **정본 사양 = `docs/spec/`·`docs/contracts/`·`config/lwrc.yaml`** (rorr-lwrc, LwRC+ v1.0 개정 — git에 나중에 올라온 버전). `specs/lwrc_v1.0.md`(Notion v1.0 초안)와 CLAUDE.md §8은 대체됨 — 리허설 트랙 A/B 재현 기록용으로만 유지 (2026-10-31 Jun) | `docs/spec/*` | ☑ |
+| 16 | `wardType = unknown`(챔피언 고유 설치물, 설치의 38%)은 **시야 피처에서 제외**. L1에는 원본 유지, 제외 건수 리포트 (2026-10-31 Jun) | `spec/04` §3, `spec/06` §2 | ☑ |
+| 17 | 와드 만료 추정 = **공식 패치값 지속시간 표 + 실측 설치→제거 분포로 검증** (2026-10-31 Jun). 표에 **설치 한도 교체 규칙**(`removal_kind = replaced`, Jun 확인) 포함 — `specs/ward_duration_2026-10-31.md` | `spec/04` §3, `config` `ward_rules` | ☑ |
+| 18 | match → 대회·스테이지 매핑 = **Leaguepedia 자동 매핑** (2026-10-31 Jun). 조인 키 `RiotPlatformGameId` = raw `platform_game_id`(정확 일치), R3-4 레전드/라이즈는 `TournamentGroups`. 규칙 `config` `stage_map`, 스크립트 `src/ingest/leaguepedia.py` | `manifest/match_stage_map.csv` | ☑ |
+| 19 | 관여 피처에 **CC·보호(실드+힐)** 추가 → 8피처. 측정은 `stats[]` 누적값 구간 증가분, prior 가중 0 (2026-10-31 Jun) | `spec/04` §1·§3b, `config` | ☑ |
+| 20 | LCK Split 구분: **s1 = LCK Cup / s2 = Rounds 1-2 + Road to MSI / s3 = Rounds 3-4 + Play-In + Playoffs** (2026-10-31 Jun) | `contracts/output-web.md` §1, `config` `season.scope_tournaments` | ☑ |
 
 ## 2. 이번 버전 범위 밖
 
@@ -38,3 +46,8 @@
 | 날짜 | 내용 |
 |---|---|
 | 2026-10-31 | Notion 정본(LwRC+ v1.0 개정 — 퍼포먼스 지표 기준)에서 저장소로 분화. 웹 출력 scope 8개 확정 |
+| 2026-10-31 | 작업 기준을 Notion에서 git 저장소로 전환 (결정 13). 공허 유충 명칭 `VoidGrub`으로 통일, 미분류 monsterType 적재 중단 가드 추가 (결정 14) |
+| 2026-10-31 | 정본 사양을 `docs/spec/`(v1.0 개정)으로 확정 (결정 15). LwRC+ 분모는 "2026 전체 풀 × 포지션"(10-27)에서 scope별 분모(`spec/05` §3)로 대체 |
+| 2026-10-31 | 모든 작업은 정본(결정 15) 기준, 기존 문서·리허설 결과는 참고용. 결정 1 확정 — LwRC+는 퍼포먼스 참고 수치, 승리 해석은 다른 수치와 결합 |
+| 2026-10-31 | Step 0 결정 4건 (결정 16~19): unknown 와드 제외, 와드 지속시간 표+검증, Leaguepedia 매핑, CC·보호 피처 추가 |
+| 2026-10-31 | 와드 지속시간 표·교체 규칙 (결정 17), Leaguepedia 매핑 구현·검증 (결정 18), LCK Split 구분 (결정 20) |

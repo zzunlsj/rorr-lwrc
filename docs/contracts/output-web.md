@@ -20,7 +20,7 @@ Worlds             (worlds)
 |---|---|---|
 | `all` | 2026 전체: LCK + First Stand + MSI + Worlds | 해당 게임의 모든 선수 (타 리그 포함) |
 | `lck` | LCK 전체 Split | LCK 선수 |
-| `lck_s1` / `lck_s2` / `lck_s3` | LCK 각 Split | LCK 선수 |
+| `lck_s1` / `lck_s2` / `lck_s3` | LCK 각 Split — s1 = LCK Cup / s2 = Rounds 1-2 + Road to MSI / s3 = Rounds 3-4 + Play-In + Playoffs (결정 20, `config` `season.scope_tournaments`) | LCK 선수 |
 | `fs` / `msi` / `worlds` | 각 국제대회 | 해당 대회 출전 전원 (타 리그 포함) |
 
 - scope마다 rate·분모를 **따로** 계산 (`spec/05` §3). 같은 선수라도 scope별 LwRC+가 다를 수 있다 — 정상.

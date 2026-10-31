@@ -30,23 +30,63 @@ buffs:
 
 allocation:
   method: both                   # both = prior와 regression 모두 산출, 신뢰도로 정본 채택
-  prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision_provided: 0.0, vision_denied: 0.0}
+  prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision_provided: 0.0, vision_denied: 0.0, cc: 0.0, protect: 0.0}
   dmg_source: frame_delta        # 프레임 누적 챔피언 피해 증가분
   estimator: nnls_ridge
   position_specific_beta: false
   presence_radius: 2300
   vision_radius: 3300
   vision_pre_window_sec: 30
+  vision_ward_types: [sight, yellowTrinket, blueTrinket, control]   # unknown 제외 (결정 16)
+  ward_rules:                     # 와드 만료 추정 (결정 17, 근거 specs/ward_duration_2026-10-31.md). 패치 16.15 기준
+    patch: "16.15"
+    duration_sec:                 # null = 제거될 때까지
+      yellowTrinket: {min: 90, max: 120, scale: avg_champion_level}   # 90 + 30·(평균 레벨 − 1)/17
+      sight: 150
+      blueTrinket: null
+      control: null
+    limit_group: {yellowTrinket: stealth, sight: stealth, control: control}   # blueTrinket 제한 없음
+    limit: {stealth: 3, control: 1}   # 초과 설치 시 같은 그룹의 가장 오래된 와드가 사라짐 (이벤트 없음)
+  cc_stat: TOTAL_TIME_CROWD_CONTROL_DEALT_TO_CHAMPIONS                    # 결정 19
+  protect_stats: [TOTAL_DAMAGE_SHIELDED_ON_TEAMMATES, TOTAL_HEAL_ON_TEAMMATES]
   shrinkage_k: null              # prior 수축의 k — Step 4에서 결정 후 기록
 
 season:
   year: 2026
   events: [LCK, FirstStand, MSI, Worlds]
   output_scopes: [all, lck, lck_s1, lck_s2, lck_s3, fs, msi, worlds]
+  scope_tournaments:             # scope → 포함 대회 폴더 (결정 20). all = 아래 전부
+    lck_s1: [LCK_Cup]
+    lck_s2: [LCK_R1-2, Road_to_MSI]
+    lck_s3: [LCK_R3-4, LCK_PlayIn_PO]
+    lck: [LCK_Cup, LCK_R1-2, Road_to_MSI, LCK_R3-4, LCK_PlayIn_PO]
+    fs: [FirstStand]
+    msi: [MSI]
+    worlds: [Worlds]
   min_games_for_ranking: 10
   winsorize_sigma: 3
   length_corr_threshold: 0.2
   length_buckets_min: [25, 35]   # 층화 시: ≤25 / 25~35 / 35+
+
+stage_map:                       # match → tournament/stage (결정 18). 출처 Leaguepedia, 조인 키 platform_game_id = RiotPlatformGameId
+  exclude_overview_contains: ["Classic Showmatch"]
+  rules:                         # 위에서부터 첫 일치. tab_prefix 생략 = 해당 페이지 전체. stage: by_group = TournamentGroups의 팀 그룹
+    - {overview: "LCK/2026 Season/Cup", tab_prefix: "Week", tournament: LCK_Cup, stage: Group}
+    - {overview: "LCK/2026 Season/Cup", tab_prefix: "Play-In", tournament: LCK_Cup, stage: PlayIn}
+    - {overview: "LCK/2026 Season/Cup", tournament: LCK_Cup, stage: Playoffs}
+    - {overview: "2026 First Stand", tab_prefix: "Groups", tournament: FirstStand, stage: Group}
+    - {overview: "2026 First Stand", tournament: FirstStand, stage: Knockout}
+    - {overview: "LCK/2026 Season/Rounds 1-2", tournament: LCK_R1-2, stage: Regular}
+    - {overview: "LCK/2026 Season/Road to MSI", tournament: Road_to_MSI, stage: Qualifier}
+    - {overview: "2026 Mid-Season Invitational", tab_prefix: "Play-In", tournament: MSI, stage: PlayIn}
+    - {overview: "2026 Mid-Season Invitational", tournament: MSI, stage: Bracket}
+    - {overview: "LCK/2026 Season/Rounds 3-4", tournament: LCK_R3-4, stage: by_group}
+    - {overview: "LCK/2026 Season/Season Play-In", tournament: LCK_PlayIn_PO, stage: PlayIn}
+    - {overview: "LCK/2026 Season/Season Playoffs", tournament: LCK_PlayIn_PO, stage: Playoffs}
+    - {overview: "2026 Season World Championship/Play-In", tournament: Worlds, stage: PlayIn}
+    - {overview: "2026 Season World Championship/Main Event", tab_prefix: "Round", tournament: Worlds, stage: Swiss}
+    - {overview: "2026 Season World Championship/Main Event", tournament: Worlds, stage: Knockout}
+  group_stage: {"Legend Group": Legend, "Rise Group": Rise}
 
 identity:
   epsilon: 1.0
