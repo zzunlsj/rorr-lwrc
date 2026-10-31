@@ -1,0 +1,44 @@
+# 트랙 B — LwRC+ 구현 사양 정본 v1.0 (Notion, 2026-10-20) §9 설정값 일람
+# 1차 구현 목표. 모든 상수는 여기서만 바꾼다.
+
+spec_version = "v1.0-draft"
+patch = "—"                # 패치 처리 미확정(§9-3) — 출력에 patch 컬럼만 태깅
+
+[g]
+model = "prior_v1"
+r_bar = 2019               # G/분/팀
+h_fixed = 10               # 분 — 고정 지평 (정본은 마지막 10분 테이퍼)
+w_alive = 0.30
+w_dragon = 0.05
+w_tower = 0.03
+w_baron = 0.10
+baron_buff_sec = 180
+
+[cluster]
+window_sec = 10
+merge_sec = 10
+merge_rule = "window_gap"  # v1.0 문구는 '씨앗 간격 ≤10초'지만 그 해석은 클러스터 겹침을 만든다 (리허설 보고 참조)
+warn_len_sec = 180
+
+[allocation]
+method = "spec_v10"
+w_dmg = 1.0
+w_assist = 0.5
+w_absorb = 0.3
+w_presence = 0.2
+presence_radius = 2300
+fallback_killer = 1.0      # 딜 명세 없는 씨앗: killer 1.0 / assist 0.5
+fallback_assist = 0.5
+
+[noise]
+delta_noise = 110
+
+[identity]
+epsilon = 1.0
+
+[normalize]
+baseline_pool = "2026"
+negative_policy = "allow"
+winsorize_sigma = 3.0
+prior_k = 10
+prior = "none"             # v1.0 G 기준 prior 없음 — 분모 표본이 쌓이면 자체 값으로 대체

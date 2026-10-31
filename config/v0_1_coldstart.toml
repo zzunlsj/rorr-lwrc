@@ -1,0 +1,38 @@
+# 트랙 A — 콜드스타트 v0.1 재현용 (Notion "콜드스타트 설정값 v0.1", 2026-08-13)
+# 목적: 기존 결과(같은 10게임) 재현으로 파이프라인 검증. 1차 목표 산출에는 v1_0.toml을 쓴다.
+
+spec_version = "v0.1-coldstart"
+
+[g]
+model = "rm_table"
+isotonic = false          # 문서 수치 재현을 위해 끔 (문서는 isotonic '권장'만 함)
+# R(m): 분 m에서 경기 종료까지 남는 리그 평균 잔여 골드 (팀당)
+r_table = [
+  61372, 60729, 59137, 57600, 56047, 54493, 52924, 51281, 49648, 48041,
+  46381, 44685, 42807, 40763, 38874, 36951, 34980, 33014, 31020, 29049,
+  27072, 25234, 23320, 21402, 19314, 17205, 14884, 12706, 11121, 12324,
+  12618, 10406,  9441,  7979,  7404,  6648,  7284,  5297,  3323,  3419,
+    827,
+]
+
+[cluster]
+window_sec = 10
+merge_sec = 10
+merge_rule = "window_gap"  # 창 사이 간격 ≤ merge_sec (v0.1 실측 재현, 겹침 0)
+warn_len_sec = 180
+
+[allocation]
+method = "coldstart_v01"
+
+[noise]
+delta_noise = 110          # 골드/초 — 진단용 (클러스터 밖 p99)
+
+[identity]
+epsilon = 1.0
+
+[normalize]
+baseline_pool = "2026"     # 확정 (2026-10-27)
+negative_policy = "allow"  # 확정 (2026-10-27)
+winsorize_sigma = 3.0
+prior_k = 10
+prior = "none"             # 재현용: 문서 분모는 같은 10게임의 평균 그 자체
