@@ -913,6 +913,7 @@ dependencies = [
     { name = "polars" },
     { name = "pyarrow" },
     { name = "pytest" },
+    { name = "pyyaml" },
     { name = "scikit-learn" },
 ]
 
@@ -925,6 +926,7 @@ requires-dist = [
     { name = "polars", specifier = ">=2.1.0" },
     { name = "pyarrow", specifier = ">=26.0.0" },
     { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
 ]
 

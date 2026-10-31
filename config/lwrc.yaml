@@ -18,7 +18,11 @@ cluster:
   window_sec: 10
   merge_sec: 10
   warn_len_sec: 180
-  seed_monsters: [dragon, baron, riftherald, horde, atakhan]
+  # 몬스터 이름은 원본 epic_monster_kill.monsterType 표기 그대로 (대소문자 구분).
+  # 공허 유충 = VoidGrub (2026-10-31 확정, 'horde' 명칭 쓰지 않음). atakhan은 원본 표기 미확인.
+  # 아래 두 목록에 없는 monsterType이 원본에 나오면 L1 적재가 오류로 멈춘다 (조용히 누락 방지).
+  seed_monsters: [dragon, baron, riftHerald, VoidGrub, atakhan]
+  jungle_camps: [raptor, wolf, krug, gromp, redCamp, blueCamp, scuttleCrab]
 
 buffs:
   baron_sec: 180

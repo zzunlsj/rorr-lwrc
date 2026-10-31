@@ -138,6 +138,8 @@ def parse_game(raw_path: Path, meta: dict) -> dict[str, pl.DataFrame]:
         "raw_sha256_gz": meta["sha256_gz"],
     }]
 
+    rules.check_monster_types((m["monster_type"] for m in monsters), where=f"(game {game_id})")
+
     def df(rows: list[dict], sort: tuple[str, ...] = ()) -> pl.DataFrame:
         out = pl.DataFrame(rows, infer_schema_length=None)
         if sort and out.height:

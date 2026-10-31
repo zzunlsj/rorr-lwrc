@@ -33,6 +33,18 @@ def test_rule2_epic_monsters(epic):
     assert rules.is_epic(epic)
 
 
+@pytest.mark.parametrize("wrong", ["horde", "voidgrub", "riftherald", "Atakhan"])
+def test_rule2_misspelled_names_are_not_epic_and_are_rejected(wrong):
+    # 공허 유충은 원본 표기 VoidGrub만 인정 (대소문자 구분). 다른 표기는 조용히 빠지지 않고 오류
+    assert not rules.is_epic(wrong)
+    with pytest.raises(ValueError, match=wrong):
+        rules.check_monster_types(["dragon", wrong])
+
+
+def test_rule2_known_names_pass_check():
+    rules.check_monster_types(sorted(rules.KNOWN_MONSTER_TYPES))
+
+
 # 규칙 3 — 장로 판정과 영혼 스택
 def test_rule3_elder_is_dragon_with_elder_type():
     assert rules.is_elder("dragon", "elder")

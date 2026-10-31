@@ -5,8 +5,11 @@
 ```
 champion_kill
 building_destroyed
-epic_monster_kill  중 monster_type ∈ {dragon, baron, riftherald, horde, atakhan}   (config: cluster.seed_monsters)
+epic_monster_kill  중 monsterType ∈ {dragon, baron, riftHerald, VoidGrub, atakhan}   (config: cluster.seed_monsters)
 ```
+
+몬스터 이름은 **원본 `monsterType` 표기 그대로**(대소문자 구분) 쓴다. 공허 유충 = `VoidGrub` (`horde`라는 명칭은 쓰지 않는다).
+`seed_monsters`·`jungle_camps` 어디에도 없는 이름이 원본에 나오면 적재를 멈추고 분류를 추가한다 — 표기 차이로 에픽이 조용히 빠지는 것을 막기 위함.
 
 **정글 캠프(raptor, gromp, krug, wolf, blueCamp, redCamp, scuttleCrab)는 씨앗이 아니다.**
 포함하면 클러스터가 게임을 삼킨다 (실측: 클러스터 20개 → 8개, 최장 522초, 커버리지 88%).

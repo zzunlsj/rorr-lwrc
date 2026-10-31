@@ -7,6 +7,11 @@ from collections import defaultdict
 from collections.abc import Iterable, Sequence
 
 import numpy as np
+import yaml
+
+from common.paths import ROOT
+
+LWRC_YAML = ROOT / "config" / "lwrc.yaml"
 
 # 규칙 1 — gameTime은 ms, 행은 시간순이 아니다
 GAME_TIME_UNIT_MS = 1000
@@ -23,13 +28,27 @@ def game_time_is_ms(end_game_time: float, n_ticks: int, tol: float = 0.1) -> boo
     return abs(end_game_time / GAME_TIME_UNIT_MS / n_ticks - 1.0) <= tol
 
 
-# 규칙 2 — epic_monster_kill에는 일반 정글 캠프가 섞여 있다
-EPIC_MONSTER_TYPES = frozenset({"dragon", "baron", "riftHerald", "VoidGrub", "atakhan"})
-JUNGLE_CAMP_TYPES = frozenset({"raptor", "wolf", "krug", "gromp", "redCamp", "blueCamp", "scuttleCrab"})
+# 규칙 2 — epic_monster_kill에는 일반 정글 캠프가 섞여 있다.
+# 이름 목록의 정본은 config/lwrc.yaml (원본 monsterType 표기, 대소문자 구분. 공허 유충 = VoidGrub)
+def _load_monster_names() -> tuple[frozenset[str], frozenset[str]]:
+    with open(LWRC_YAML, encoding="utf-8") as f:
+        cluster = yaml.safe_load(f)["cluster"]
+    return frozenset(cluster["seed_monsters"]), frozenset(cluster["jungle_camps"])
+
+
+EPIC_MONSTER_TYPES, JUNGLE_CAMP_TYPES = _load_monster_names()
+KNOWN_MONSTER_TYPES = EPIC_MONSTER_TYPES | JUNGLE_CAMP_TYPES
 
 
 def is_epic(monster_type: str | None) -> bool:
     return monster_type in EPIC_MONSTER_TYPES
+
+
+def check_monster_types(monster_types: Iterable[str | None], where: str = "") -> None:
+    """설정에 없는 monsterType이 있으면 오류. 표기가 다른 에픽(예: 'horde', 'Atakhan')이 조용히 빠지는 것을 막는다."""
+    unknown = sorted({str(m) for m in monster_types} - KNOWN_MONSTER_TYPES)
+    if unknown:
+        raise ValueError(f"알 수 없는 monsterType {unknown} {where} — config/lwrc.yaml cluster.seed_monsters/jungle_camps에 분류 추가 필요")
 
 
 # 규칙 3 — 장로 = dragon + dragonType='elder'. 영혼 판정 시 장로 제외. 바다 드래곤은 'water'
