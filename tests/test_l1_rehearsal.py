@@ -1,17 +1,29 @@
 """10게임 리허설 L1 통합 테스트. data/l1이 없으면 건너뛴다 (data/는 커밋하지 않음).
 
 기대값 출처: Notion "콜드스타트 설정값 v0.1" §0, §7 (같은 CSV의 실측).
+L1에는 이제 678게임이 있으므로, 리허설 10게임(CSV 추출본으로 처음 받은 게임)으로 범위를 좁혀 같은 기대값을 확인한다.
 """
+
+import csv
+import re
 
 import pytest
 
 from common.db import connect
-from common.paths import L1
+from common.paths import L1, MANIFEST
 
 pytestmark = pytest.mark.skipif(not (L1 / "games").exists(), reason="L1 데이터 없음")
 
 
+def rehearsal_game_ids() -> list[str]:
+    with open(MANIFEST / "received.csv", newline="") as f:
+        return sorted(r["game_id"] for r in csv.DictReader(f) if (r.get("raw_format") or "csv_extract") == "csv_extract")
+
+
 def q(sql: str):
+    ids = ",".join(f"'{g}'" for g in rehearsal_game_ids())
+    sql = re.sub(r"read_parquet\('\{L1\}/([a-z_]+)/\*\*/\*\.parquet'\)",
+                 lambda m: f"(SELECT * FROM read_parquet('{{L1}}/{m[1]}/**/*.parquet') WHERE game_id IN ({ids}))", sql)
     return connect().execute(sql.replace("{L1}", L1.as_posix())).fetchall()
 
 

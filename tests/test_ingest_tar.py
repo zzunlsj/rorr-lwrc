@@ -82,7 +82,11 @@ def _both_format_games():
 def test_l1_identical_across_raw_formats():
     from normalize.build_l1 import parse_game
 
-    meta_only = ("raw_sha256_gz", "raw_format", "n_events", "n_duplicate_events")
+    # raw 형식 자체의 메타, 그리고 tar의 session.json에서만 오는 Kazel 메타(팀 ID·라벨)는 비교에서 뺀다
+    meta_only = ("raw_sha256_gz", "raw_format", "n_events", "n_duplicate_events",
+                 "game_start_utc", "league_label", "tournament_label", "stage_label",
+                 "blue_team_id", "blue_team_code", "red_team_id", "red_team_code",
+                 "esports_team_id", "team_code", "team_name")
     for v in _both_format_games():
         a, b = parse_game(v["csv_extract"]), parse_game(v["rawstats_ndjson"])
         for table in a:

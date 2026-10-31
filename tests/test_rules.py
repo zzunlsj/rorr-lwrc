@@ -146,3 +146,10 @@ def test_patch_fallback_to_kazel():
 def test_rule4_null_entry_in_recap_is_skipped():
     recap = [{"source": "Champion", "casterId": 6, "breakdown": [{"physicalDmg": 100, "magicDmg": 0, "trueDmg": 0}]}, None]
     assert rules.parse_death_recap(recap) == {6: 100}
+
+
+def test_rule4_champion_entry_without_caster():
+    zero = {"source": "Champion", "breakdown": [{"physicalDmg": 0}]}
+    assert rules.parse_death_recap([zero]) == {}
+    with pytest.raises(ValueError, match="casterId"):
+        rules.parse_death_recap([{"source": "Champion", "breakdown": [{"physicalDmg": 50}]}])

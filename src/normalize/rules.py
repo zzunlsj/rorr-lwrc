@@ -76,6 +76,11 @@ def parse_death_recap(recap) -> dict[int, float]:
             b.get("physicalDmg", 0) + b.get("magicDmg", 0) + b.get("trueDmg", 0)
             for b in entry.get("breakdown") or []
         )
+        if entry.get("casterId") is None:
+            # 2026 전체 66,860항목 중 2건, 둘 다 딜 0 → 귀속할 것이 없어 건너뛴다. 딜이 있으면 조용히 버리지 않고 멈춘다
+            if dmg:
+                raise ValueError(f"casterId 없는 Champion 딜 {dmg}: 귀속 불가")
+            continue
         out[int(entry["casterId"])] += dmg
     return dict(out)
 
@@ -145,3 +150,7 @@ def resolve_patch(game_version: str, kazel_patch: str | None) -> tuple[str, str]
     if kazel_patch:
         return kazel_patch, "kazel"
     return "", "unresolved"
+
+
+# spec/06 §1 — 재시작 탐지: 시퀀스 순서에서 게임 시각이 이만큼 넘게 되감기면 재시작으로 본다
+REWIND_TOLERANCE_MS = 1000

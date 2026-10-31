@@ -47,6 +47,7 @@ allocation:
       control: null
     limit_group: {yellowTrinket: stealth, sight: stealth, control: control}   # blueTrinket 제한 없음
     limit: {stealth: 3, control: 1}   # 초과 설치 시 같은 그룹의 가장 오래된 와드가 사라짐 (이벤트 없음)
+    match_xz: 50                  # 설치↔제거 매칭 위치 허용 오차 (연결 키 없음, spec/06 §2)
   cc_stat: TOTAL_TIME_CROWD_CONTROL_DEALT_TO_CHAMPIONS                    # 결정 19
   protect_stats: [TOTAL_DAMAGE_SHIELDED_ON_TEAMMATES, TOTAL_HEAL_ON_TEAMMATES]
   shrinkage_k: null              # prior 수축의 k — Step 4에서 결정 후 기록
