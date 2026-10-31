@@ -1,5 +1,7 @@
 # Step 0 데이터 조사 — 사전 점검 (2026-10-31)
 
+> **전체 데이터 리포트는 `specs/step0_report_2026-10-31.md`** (월별 tar 678게임). 이 문서는 10게임 사전 점검 기록이다.
+
 - 기준: `docs/workflow.md` Step 0, `docs/contracts/input.md` §1
 - **대상: 보유 중인 10게임 CSV**(LCK_R3-4, 2026-08-07~09, Week 11, 패치 16.15) — 월별 tar(1~10월)는 아직 미수령.
   따라서 "월별·대회별 적재율"은 산출할 수 없고, 이 문서는 **필드 존재 여부와 형식의 사전 확인**이다. tar 수령 후 같은 스크립트로 재실행해야 Step 0이 완료된다.
@@ -71,3 +73,27 @@
 
 - 사양이 요구하는 필드는 **대회·Split을 빼고 모두 있습니다.** 누적 피해, 좌표, 와드 위치 모두 있으므로 성분을 빼야 할 것은 없습니다. 관여 6피처(시야 2종 포함) 회귀를 그대로 진행할 수 있습니다.
 - 진행 전에 정해야 할 것은 §4의 1~5입니다. 6은 tar 수령 후 Step 0을 다시 돌리면 확인됩니다.
+
+## 6. 월별 tar 수령 확인 (2026-10-31, 압축 해제 없이 목록·메타만)
+
+- 수령: `data/incoming/2026-01.tar` ~ `2026-10.tar` 10개, 7.4GB.
+- **형식이 이번 CSV 추출본과 다르다**: `<YYYY-MM>/games.csv`(월별 메타) + `<YYYY-MM>/<platformID>/<gameID>/session.json` + `events-0000N.ndjson.gz`(한 줄 = 한 페이지 `{fetched_at, cursor_in, cursor_out, events:[raw 이벤트]}`). 이벤트 자체는 같은 RFC 461 raw.
+  → `ingest.split_raw`(CSV 입력)를 이 형식에 맞게 확장해야 한다.
+- 게임 678개, 디렉터리 678개 — session.json·events 누락 0, platform_game_id 중복 0, 전부 `is_primary=True`·`event_status=complete`. 이벤트 수 5,748~14,102 (중앙값 8,830). 패치 16.1~16.20.
+- **범위 = 대회 전체** (LCK 팀 미출전 경기 포함): First Stand 45, MSI 71, Worlds 60.
+- Kazel 라벨 `lck_split_1/2/3_2026`이 결정 20의 Split 구분과 정확히 일치. 스테이지 라벨도 Leaguepedia 분류와 1:1 대응 (R3-4는 둘 다 `groups` → 레전드/라이즈는 Leaguepedia 그룹으로 판정).
+
+| 대회 | 스테이지 | Leaguepedia | tar | 차이 |
+|---|---|---|---|---|
+| LCK_Cup | Group / PlayIn / Playoffs | 71 / 13 / 41 | 71 / 13 / 41 | — |
+| FirstStand | Group / Knockout | 35 / 10 | 35 / 10 | — |
+| LCK_R1-2 | Regular | 204 | 204 | — |
+| Road_to_MSI | Qualifier | 20 | 20 | — |
+| MSI | PlayIn / Bracket | 18 / 53 | 18 / 53 | — |
+| LCK_R3-4 | Legend / Rise | 50 / 49 | 48 / 49 | 아래 ①② |
+| LCK_PlayIn_PO | PlayIn / Playoffs | 14 / 41 | 14 / 41 | — |
+| Worlds | PlayIn / Swiss | 22 / 44 | 22 / 38 | 아래 ③ |
+
+① **GEN vs DK 2026-08-01 1세트**: Leaguepedia에 게임 ID가 없고 tar에는 있음(`LOLTMNT02_443761`). 같은 게임 → 매핑 수동 지정 필요.
+② **T1 vs DK 2026-08-14 3세트(`LOLTMNT01_444568`)**: tar에 없음 → Kazel에게 확인 필요.
+③ **Worlds 6게임(10/29 23시 이후)**: tar 수집 시점 이후 경기 — 다음 수령분.

@@ -24,6 +24,8 @@
 | 18 | match → 대회·스테이지 매핑 = **Leaguepedia 자동 매핑** (2026-10-31 Jun). 조인 키 `RiotPlatformGameId` = raw `platform_game_id`(정확 일치), R3-4 레전드/라이즈는 `TournamentGroups`. 규칙 `config` `stage_map`, 스크립트 `src/ingest/leaguepedia.py` | `manifest/match_stage_map.csv` | ☑ |
 | 19 | 관여 피처에 **CC·보호(실드+힐)** 추가 → 8피처. 측정은 `stats[]` 누적값 구간 증가분, prior 가중 0 (2026-10-31 Jun) | `spec/04` §1·§3b, `config` | ☑ |
 | 20 | LCK Split 구분: **s1 = LCK Cup / s2 = Rounds 1-2 + Road to MSI / s3 = Rounds 3-4 + Play-In + Playoffs** (2026-10-31 Jun) | `contracts/output-web.md` §1, `config` `season.scope_tournaments` | ☑ |
+| 21 | Raw 수령 범위 = **대회 전체** (LCK 팀 미출전 경기 포함). 월별 tar 원본(`session.json` + `events-*.ndjson.gz`)을 바이트 그대로 L0 보관 (2026-10-31 Jun) | `CLAUDE.md` §9-5, `src/ingest/ingest_tar.py` | ☑ |
+| 22 | 메타 결측 대체: raw 우선, 없으면 Kazel `session.json`. **승자**는 `game_end`가 없으면 Kazel `winning_side`를 쓰되 Leaguepedia와 일치할 때만 (어긋나면 제외), 종료 시각 = 마지막 틱. **패치**는 `game_info`가 없으면 Kazel `patch`. L1 `games`에 `winner_source`·`patch_source` 기록 (2026-10-31 Jun) | `spec/06` §1, `normalize/rules.py` | ☑ |
 
 ## 2. 이번 버전 범위 밖
 
@@ -51,3 +53,5 @@
 | 2026-10-31 | 모든 작업은 정본(결정 15) 기준, 기존 문서·리허설 결과는 참고용. 결정 1 확정 — LwRC+는 퍼포먼스 참고 수치, 승리 해석은 다른 수치와 결합 |
 | 2026-10-31 | Step 0 결정 4건 (결정 16~19): unknown 와드 제외, 와드 지속시간 표+검증, Leaguepedia 매핑, CC·보호 피처 추가 |
 | 2026-10-31 | 와드 지속시간 표·교체 규칙 (결정 17), Leaguepedia 매핑 구현·검증 (결정 18), LCK Split 구분 (결정 20) |
+| 2026-10-31 | 월별 tar 수령(678게임). Raw 수령 범위 = 대회 전체 (결정 21). tar 적재 스크립트·형식 공용 raw 리더 추가 |
+| 2026-10-31 | Step 0 전체 리포트(678게임). 승자·패치 결측 대체 (결정 22). Worlds 잔여분·누락 1게임은 11/15 결승 후 일괄 수령 |

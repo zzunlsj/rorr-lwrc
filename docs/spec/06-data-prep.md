@@ -11,6 +11,7 @@
 | 피해 분해 | `source = Champion` 만 사용 |
 | 씨앗 필터 | 정글 캠프 제외 (`spec/02` §1) |
 | Worlds | 데이터가 1~10월이므로 진행 중 대회일 수 있음 — **포함 범위를 리포트에 명시** |
+| 메타 결측 | `game_end`·`game_info`가 없으면 Kazel `session.json`으로 대체. 승자는 Leaguepedia와 일치할 때만, 어긋나면 제외. 출처는 `winner_source`·`patch_source`에 기록 (결정 22) |
 
 데이터 품질 문제는 **고치지 말고 탐지·플래그·제외**한다. 수정은 데이터팀 결과를 받아서 반영.
 
