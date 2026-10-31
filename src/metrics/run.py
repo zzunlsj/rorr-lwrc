@@ -21,7 +21,7 @@ from features.state import SIDES, list_games, load_state
 from metrics import lwrc_plus, qc
 from metrics.attribution import allocator_from_config, attribute
 
-UNRESOLVED = "patch_handling=미확정;extra_metrics=미확정;raw_scope=미확정"
+UNRESOLVED = "patch_handling=미확정;extra_metrics=미확정"
 
 
 def run_game(game_id: str, cfg: dict, gmodel, allocator):

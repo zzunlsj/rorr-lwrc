@@ -123,3 +123,26 @@ def test_rule7_unsorted_input_is_sorted_first():
 # 규칙 8 — ward/item 이벤트는 피드에 존재
 def test_rule8_feed_event_list():
     assert set(rules.FEED_EVENTS_PRESENT) == {"ward_placed", "ward_killed", "item_purchased"}
+
+
+# 결정 22 — game_end·game_info 결측 대체
+def test_winner_raw_game_end_wins():
+    assert rules.resolve_winner(200, "blue", "blue") == (200, "raw_game_end")
+
+
+def test_winner_fallback_requires_kazel_and_leaguepedia_agree():
+    assert rules.resolve_winner(None, "red", "red") == (200, "kazel+leaguepedia")
+    assert rules.resolve_winner(None, 100, "blue") == (100, "kazel+leaguepedia")
+    assert rules.resolve_winner(None, "red", "blue") == (None, "unresolved")
+    assert rules.resolve_winner(None, "red", None) == (None, "unresolved")
+
+
+def test_patch_fallback_to_kazel():
+    assert rules.resolve_patch("16.14.800.1", "16.13") == ("16.14", "raw_game_info")
+    assert rules.resolve_patch("", "16.14") == ("16.14", "kazel")
+    assert rules.resolve_patch("", None) == ("", "unresolved")
+
+
+def test_rule4_null_entry_in_recap_is_skipped():
+    recap = [{"source": "Champion", "casterId": 6, "breakdown": [{"physicalDmg": 100, "magicDmg": 0, "trueDmg": 0}]}, None]
+    assert rules.parse_death_recap(recap) == {6: 100}

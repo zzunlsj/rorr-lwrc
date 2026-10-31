@@ -47,7 +47,9 @@ def partition_check(t: np.ndarray, bucket: np.ndarray, hits: np.ndarray, cluster
 def expected_vs_received() -> pl.DataFrame:
     """CLAUDE.md §6-1: 대회·스테이지별 기대 게임 수 대비 수령 수, 중복."""
     exp = pl.read_csv(MANIFEST / "expected_games.csv")
-    rec = pl.read_csv(MANIFEST / "received.csv", schema_overrides={"match_id": pl.Utf8, "game_id": pl.Utf8})
+    rec = pl.read_csv(MANIFEST / "received.csv", infer_schema_length=0)
+    if "superseded_by" in rec.columns:  # 같은 게임의 다른 형식 사본은 세지 않는다
+        rec = rec.filter(pl.col("superseded_by").fill_null("") == "")
     dup = rec.group_by("game_id").len().filter(pl.col("len") > 1).height
     got = rec.group_by("tournament", "stage").agg(pl.len().alias("received"), pl.col("game_id").n_unique().alias("unique"))
     return (exp.join(got, on=["tournament", "stage"], how="left")

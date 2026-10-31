@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from common.paths import MANIFEST, RAW
+from ingest.raw_reader import CSV_EXTRACT, RAWSTATS_NDJSON
 
 SEASON = "2026"
 RECEIVED_CSV = MANIFEST / "received.csv"
@@ -30,6 +31,7 @@ RECEIVED_COLUMNS = [
     "tournament", "stage", "stage_source", "match_id", "game_id", "game_n",
     "platform_game_id", "rows", "bytes_csv", "bytes_gz", "sha256_csv", "sha256_gz",
     "raw_path", "source_file", "source_sha256", "ingested_at",
+    "raw_format", "superseded_by",
 ]
 GAME_N_RE = re.compile(r"\|game(\d+)$")
 
@@ -158,24 +160,32 @@ def split(source: Path, stage_map: dict[str, dict]) -> list[dict]:
             "sha256_csv": s.sha_csv.hexdigest(), "sha256_gz": sha_gz,
             "raw_path": dest.relative_to(RAW.parent.parent).as_posix(),
             "source_file": source.name, "source_sha256": source_sha, "ingested_at": now,
+            "raw_format": CSV_EXTRACT, "superseded_by": "",
         })
     staging.rmdir()
     return records
 
 
 def update_received(records: list[dict]) -> None:
-    existing: dict[str, dict] = {}
+    """(game_id, raw_format) 단위로 병합. 같은 게임을 tar 원본으로도 받았으면 CSV 추출본에 superseded_by를 단다."""
+    existing: dict[tuple, dict] = {}
     if RECEIVED_CSV.exists():
         with open(RECEIVED_CSV, newline="") as f:
-            existing = {r["game_id"]: r for r in csv.DictReader(f)}
+            for r in csv.DictReader(f):
+                r["raw_format"] = r.get("raw_format") or CSV_EXTRACT
+                existing[(r["game_id"], r["raw_format"])] = r
     for r in records:
-        prev = existing.get(r["game_id"])
+        key = (r["game_id"], r["raw_format"])
+        prev = existing.get(key)
         if prev is None or prev["sha256_gz"] != r["sha256_gz"]:
-            existing[r["game_id"]] = r
+            existing[key] = r
+    ndjson_games = {gid for gid, fmt in existing if fmt == RAWSTATS_NDJSON}
+    for (gid, fmt), r in existing.items():
+        r["superseded_by"] = RAWSTATS_NDJSON if fmt == CSV_EXTRACT and gid in ndjson_games else ""
     with open(RECEIVED_CSV, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=RECEIVED_COLUMNS)
         w.writeheader()
-        for r in sorted(existing.values(), key=lambda r: (r["tournament"], r["stage"], r["match_id"], int(r["game_n"]))):
+        for r in sorted(existing.values(), key=lambda r: (r["tournament"], r["stage"], r["match_id"], int(r["game_n"]), r["raw_format"])):
             w.writerow(r)
 
 

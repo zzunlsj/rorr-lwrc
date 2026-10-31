@@ -1,4 +1,4 @@
-"""L1 정규화: 경기별 Raw(csv.gz) → 표준 테이블 Parquet (CLAUDE.md §4).
+"""L1 정규화: 경기별 Raw(csv_extract | rawstats_ndjson) → 표준 테이블 Parquet (CLAUDE.md §4).
 
 테이블 (data/l1/<table>/tournament=<t>/stage=<s>/<game_id>.parquet):
   games, participants, frames_team, frames_player,
@@ -10,18 +10,15 @@
 
 import argparse
 import csv
-import gzip
-import json
-import sys
 from collections import Counter
 from pathlib import Path
 
 import polars as pl
 
-from common.paths import L1, MANIFEST, ROOT
+from common.paths import L1, MANIFEST
+from ingest.leaguepedia import load_lp
+from ingest.raw_reader import iter_events, read_session
 from normalize import rules
-
-csv.field_size_limit(sys.maxsize)
 
 TABLES = (
     "games", "participants", "frames_team", "frames_player",
@@ -37,61 +34,58 @@ def _xz(payload: dict) -> tuple[float | None, float | None]:
     return pos.get("x"), pos.get("z")
 
 
-def parse_game(raw_path: Path, meta: dict) -> dict[str, pl.DataFrame]:
+def parse_game(meta: dict, lp_winner: dict | None = None) -> dict[str, pl.DataFrame]:
     game_id = meta["game_id"]
     counts: Counter = Counter()
     stats: dict[int, tuple[int, dict]] = {}  # gameTime → (sequenceIndex, payload); 같은 시각은 마지막 시퀀스
     kills, kill_dmg, monsters, buildings = [], [], [], []
     game_end = game_info = None
 
-    with gzip.open(raw_path, "rt", newline="") as f:
-        for row in csv.DictReader(f):
-            schema = row["rfc461_schema"]
-            counts[schema] += 1
-            if schema not in PARSED_SCHEMAS:
-                continue
-            p = json.loads(row["payload"])
-            seq = int(row["sequence_index"])
-            if schema == "stats_update":
-                t = int(p["gameTime"])
-                if t not in stats or seq > stats[t][0]:
-                    stats[t] = (seq, p)
-            elif schema == "champion_kill":
-                bounty, shutdown = rules.parse_kill_gold(p)
-                recap = rules.parse_death_recap(p.get("deathRecap"))
-                x, z = _xz(p)
-                kills.append({
-                    "seq": seq, "game_time_ms": int(p["gameTime"]),
-                    "killer": int(p["killer"]), "victim": int(p["victim"]),
-                    "killer_team": int(p["killerTeamID"]), "victim_team": int(p["victimTeamID"]),
-                    "assistants": [int(a) for a in p.get("assistants") or []],
-                    "bounty": bounty, "shutdown_bounty": shutdown,
-                    "has_champion_recap": bool(recap), "x": x, "z": z,
-                })
-                kill_dmg.extend({"kill_seq": seq, "caster_id": c, "dmg": d} for c, d in recap.items())
-            elif schema == "epic_monster_kill":
-                mt, dt = p.get("monsterType"), p.get("dragonType")
-                x, z = _xz(p)
-                monsters.append({
-                    "seq": seq, "game_time_ms": int(p["gameTime"]), "monster_type": mt, "dragon_type": dt,
-                    "killer": int(p["killer"]) if p.get("killer") is not None else None,
-                    "killer_team": int(p["killerTeamID"]),
-                    "assistants": [int(a) for a in p.get("assistants") or []],
-                    "kill_type": p.get("killType"),
-                    "is_epic": rules.is_epic(mt), "is_elder": rules.is_elder(mt, dt), "x": x, "z": z,
-                })
-            elif schema == "building_destroyed":
-                x, z = _xz(p)
-                buildings.append({
-                    "seq": seq, "game_time_ms": int(p["gameTime"]), "team_id": int(p["teamID"]),
-                    "lane": p.get("lane"), "building_type": p.get("buildingType"), "turret_tier": p.get("turretTier"),
-                    "last_hitter": int(p["lastHitter"]) if p.get("lastHitter") is not None else None,
-                    "assistants": [int(a) for a in p.get("assistants") or []], "x": x, "z": z,
-                })
-            elif schema == "game_end":
-                game_end = p
-            elif schema == "game_info":
-                game_info = p
+    read_stats: dict = {}
+    for schema, seq, p in iter_events(meta, read_stats):
+        counts[schema] += 1
+        if schema not in PARSED_SCHEMAS:
+            continue
+        if schema == "stats_update":
+            t = int(p["gameTime"])
+            if t not in stats or seq > stats[t][0]:
+                stats[t] = (seq, p)
+        elif schema == "champion_kill":
+            bounty, shutdown = rules.parse_kill_gold(p)
+            recap = rules.parse_death_recap(p.get("deathRecap"))
+            x, z = _xz(p)
+            kills.append({
+                "seq": seq, "game_time_ms": int(p["gameTime"]),
+                "killer": int(p["killer"]), "victim": int(p["victim"]),
+                "killer_team": int(p["killerTeamID"]), "victim_team": int(p["victimTeamID"]),
+                "assistants": [int(a) for a in p.get("assistants") or []],
+                "bounty": bounty, "shutdown_bounty": shutdown,
+                "has_champion_recap": bool(recap), "x": x, "z": z,
+            })
+            kill_dmg.extend({"kill_seq": seq, "caster_id": c, "dmg": d} for c, d in recap.items())
+        elif schema == "epic_monster_kill":
+            mt, dt = p.get("monsterType"), p.get("dragonType")
+            x, z = _xz(p)
+            monsters.append({
+                "seq": seq, "game_time_ms": int(p["gameTime"]), "monster_type": mt, "dragon_type": dt,
+                "killer": int(p["killer"]) if p.get("killer") is not None else None,
+                "killer_team": int(p["killerTeamID"]),
+                "assistants": [int(a) for a in p.get("assistants") or []],
+                "kill_type": p.get("killType"),
+                "is_epic": rules.is_epic(mt), "is_elder": rules.is_elder(mt, dt), "x": x, "z": z,
+            })
+        elif schema == "building_destroyed":
+            x, z = _xz(p)
+            buildings.append({
+                "seq": seq, "game_time_ms": int(p["gameTime"]), "team_id": int(p["teamID"]),
+                "lane": p.get("lane"), "building_type": p.get("buildingType"), "turret_tier": p.get("turretTier"),
+                "last_hitter": int(p["lastHitter"]) if p.get("lastHitter") is not None else None,
+                "assistants": [int(a) for a in p.get("assistants") or []], "x": x, "z": z,
+            })
+        elif schema == "game_end":
+            game_end = p
+        elif schema == "game_info":
+            game_info = p
 
     # 규칙 1: gameTime 정렬
     ticks = sorted(stats.items())
@@ -126,16 +120,23 @@ def parse_game(raw_path: Path, meta: dict) -> dict[str, pl.DataFrame]:
     version = (game_info or {}).get("gameVersion", "")
     end_ms = int(game_end["gameTime"]) if game_end else (ticks[-1][0] if ticks else None)
     tick_stats = rules.tick_interval_stats([t for t, _ in ticks])  # 규칙 7
+    # 결정 22: game_end·game_info가 없으면 Kazel 메타로 대체 (승자는 Leaguepedia 교차 확인)
+    session = read_session(meta) or {}
+    winner, winner_source = rules.resolve_winner(
+        game_end.get("winningTeam") if game_end else None,
+        session.get("winning_side"), (lp_winner or {}).get(meta["platform_game_id"]))
+    patch, patch_source = rules.resolve_patch(version, session.get("patch"))
     games = [{
         "match_id": meta["match_id"], "game_n": int(meta["game_n"]), "platform_game_id": meta["platform_game_id"],
-        "game_version": version, "patch": ".".join(version.split(".")[:2]),
-        "winning_team": int(game_end["winningTeam"]) if game_end else None,
+        "game_version": version, "patch": patch, "patch_source": patch_source,
+        "winning_team": winner, "winner_source": winner_source, "has_game_end": game_end is not None,
         "end_game_time_ms": end_ms, "first_tick_ms": ticks[0][0] if ticks else None,
         "last_tick_ms": ticks[-1][0] if ticks else None, "n_ticks": len(ticks),
         "game_time_is_ms": rules.game_time_is_ms(end_ms or 0, len(ticks)),
         "tick_mean_s": tick_stats["mean_s"], "tick_p95_s": tick_stats["p95_s"],
         "tick_max_s": tick_stats["max_s"], "tick_n_gaps": tick_stats["n_gaps"], "tick_ok": tick_stats["ok"],
-        "raw_sha256_gz": meta["sha256_gz"],
+        "raw_sha256_gz": meta["sha256_gz"], "raw_format": meta.get("raw_format") or "csv_extract",
+        "n_events": read_stats["events"], "n_duplicate_events": read_stats["duplicates"],
     }]
 
     rules.check_monster_types((m["monster_type"] for m in monsters), where=f"(game {game_id})")
@@ -159,16 +160,25 @@ def parse_game(raw_path: Path, meta: dict) -> dict[str, pl.DataFrame]:
     }
 
 
+def leaguepedia_winner_sides() -> dict[str, str]:
+    """platform_game_id → 승리 진영(blue|red). Leaguepedia Winner 1 = 블루, 2 = 레드."""
+    _, lp, _ = load_lp()
+    return {pgid: {"1": "blue", "2": "red"}.get(g["winner"]) for pgid, g in lp.items()}
+
+
 def l1_path(table: str, meta: dict) -> Path:
     return L1 / table / f"tournament={meta['tournament']}" / f"stage={meta['stage']}" / f"{meta['game_id']}.parquet"
 
 
 def build(game_ids: set[str] | None = None) -> list[str]:
     with open(MANIFEST / "received.csv", newline="") as f:
-        metas = [r for r in csv.DictReader(f) if not game_ids or r["game_id"] in game_ids]
+        # superseded_by가 비어 있는 행만 (같은 게임을 두 형식으로 받았으면 tar 원본이 우선)
+        metas = [r for r in csv.DictReader(f)
+                 if not r.get("superseded_by") and (not game_ids or r["game_id"] in game_ids)]
+    lp_winner = leaguepedia_winner_sides()
     done = []
     for meta in metas:
-        tables = parse_game(ROOT / meta["raw_path"], meta)
+        tables = parse_game(meta, lp_winner)
         for name, frame in tables.items():
             path = l1_path(name, meta)
             path.parent.mkdir(parents=True, exist_ok=True)

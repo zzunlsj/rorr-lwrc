@@ -87,6 +87,15 @@ stage_map:                       # match → tournament/stage (결정 18). 출�
     - {overview: "2026 Season World Championship/Main Event", tab_prefix: "Round", tournament: Worlds, stage: Swiss}
     - {overview: "2026 Season World Championship/Main Event", tournament: Worlds, stage: Knockout}
   group_stage: {"Legend Group": Legend, "Rise Group": Rise}
+  source_labels:                 # 교차 확인: Kazel games.csv의 tournament 라벨. 어긋나면 적재 중단
+    LCK_Cup: lck_split_1_2026
+    FirstStand: first_stand_2026
+    LCK_R1-2: lck_split_2_2026
+    Road_to_MSI: lck_split_2_2026
+    MSI: msi_2026
+    LCK_R3-4: lck_split_3_2026
+    LCK_PlayIn_PO: lck_split_3_2026
+    Worlds: worlds_2026
 
 identity:
   epsilon: 1.0

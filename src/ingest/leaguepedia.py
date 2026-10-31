@@ -7,7 +7,7 @@
 사용:
   uv run python -m ingest.leaguepedia discover          # 2026 대상 대회 OverviewPage·Tab 목록
   uv run python -m ingest.leaguepedia fetch             # manifest/leaguepedia_{games,groups}_2026.csv 갱신
-  uv run python -m ingest.leaguepedia build-map <pairs.csv>   # match_id·platform_game_id 열이 있는 CSV → manifest/match_stage_map.csv
+  uv run python -m ingest.leaguepedia build-map <pairs.csv>   # match_id·platform_game_id 열이 있는 CSV → manifest/match_stage_map.csv에 병합
 """
 
 import argparse
@@ -31,6 +31,7 @@ PAUSE_SEC = 3.0
 GAMES_CSV = MANIFEST / "leaguepedia_games_2026.csv"
 GROUPS_CSV = MANIFEST / "leaguepedia_groups_2026.csv"
 STAGE_MAP_CSV = MANIFEST / "match_stage_map.csv"
+STAGE_OVERRIDES_CSV = MANIFEST / "stage_map_overrides.csv"
 LWRC_YAML = ROOT / "config" / "lwrc.yaml"
 
 # 2026 대상 대회 (CLAUDE.md §7). LIKE 패턴은 discover 결과로 확인한다.
@@ -149,23 +150,29 @@ def classify(game: dict, rules: list[dict], groups: dict, group_stage: dict) -> 
     raise ValueError(f"stage_map 규칙에 없는 페이지: {game['overview_page']} / {game['tab']}")
 
 
-def build_map(pairs_csv: Path) -> None:
+def load_lp() -> tuple[dict, dict, dict]:
+    """(stage_map 설정, platform_game_id → Leaguepedia 게임, 그룹). 수동 지정(STAGE_OVERRIDES_CSV)을 반영한다."""
     cfg = yaml.safe_load(LWRC_YAML.read_text())["stage_map"]
-    csv.field_size_limit(sys.maxsize)
     with GROUPS_CSV.open(newline="") as fh:
         groups = {(r["overview_page"], r["team"]): r["group_name"] for r in csv.DictReader(fh)}
     with GAMES_CSV.open(newline="") as fh:
-        lp = {r["platform_game_id"]: r for r in csv.DictReader(fh)
-              if r["platform_game_id"]
-              and not any(x in r["overview_page"] for x in cfg["exclude_overview_contains"])}
+        games = [r for r in csv.DictReader(fh)
+                 if not any(x in r["overview_page"] for x in cfg["exclude_overview_contains"])]
+    lp = {r["platform_game_id"]: r for r in games if r["platform_game_id"]}
+    # Leaguepedia에 게임 ID가 비어 있는 경기: platform_game_id → lp_game_id 수동 지정
+    by_lp_id = {r["lp_game_id"]: r for r in games}
+    if STAGE_OVERRIDES_CSV.exists():
+        with STAGE_OVERRIDES_CSV.open(newline="") as fh:
+            for o in csv.DictReader(fh):
+                lp[o["platform_game_id"]] = by_lp_id[o["lp_game_id"]]
+    return cfg, lp, groups
 
-    by_match: dict[str, set] = {}
-    with pairs_csv.open(newline="") as fh:
-        for r in csv.DictReader(fh):
-            by_match.setdefault(r["match_id"], set()).add(r["platform_game_id"])
 
+def map_matches(pairs: dict[str, set[str]]) -> list[dict]:
+    """match_id → {platform_game_id} 를 (tournament, stage)로 분류. 누락·충돌이 있으면 멈춘다."""
+    cfg, lp, groups = load_lp()
     out, missing, conflict = [], [], []
-    for match_id, pgids in sorted(by_match.items()):
+    for match_id, pgids in sorted(pairs.items()):
         found = {}
         for pgid in sorted(pgids):
             if pgid not in lp:
@@ -183,14 +190,38 @@ def build_map(pairs_csv: Path) -> None:
                     "stage_source": f"leaguepedia:{lp_match}"})
 
     for match_id, pgid in missing:
-        print(f"Leaguepedia에 없음: match {match_id} game {pgid}", file=sys.stderr)
+        print(f"Leaguepedia에 없음: match {match_id} game {pgid} — {STAGE_OVERRIDES_CSV.name}에 지정 필요", file=sys.stderr)
     for match_id, found in conflict:
         print(f"한 경기 안에서 스테이지가 다름: {match_id} {found}", file=sys.stderr)
     if missing or conflict:
-        raise SystemExit(f"매핑 실패 — 없음 {len(missing)}게임, 충돌 {len(conflict)}경기. match_stage_map.csv를 쓰지 않았다")
+        raise SystemExit(f"매핑 실패 — 없음 {len(missing)}게임, 충돌 {len(conflict)}경기")
+    return out
 
-    write_csv(STAGE_MAP_CSV, ["match_id", "tournament", "stage", "stage_source"], out)
-    print(f"{len(out)}경기 → {STAGE_MAP_CSV}")
+
+def merge_stage_map(rows: list[dict]) -> None:
+    """기존 match_stage_map.csv에 병합한다. 같은 match_id가 다른 값으로 바뀌면 멈춘다."""
+    existing = {}
+    if STAGE_MAP_CSV.exists():
+        with STAGE_MAP_CSV.open(newline="") as fh:
+            existing = {r["match_id"]: r for r in csv.DictReader(fh)}
+    for r in rows:
+        prev = existing.get(r["match_id"])
+        if prev and (prev["tournament"], prev["stage"]) != (r["tournament"], r["stage"]):
+            raise SystemExit(f"기존 매핑과 다름 {r['match_id']}: {prev['tournament']}/{prev['stage']} → {r['tournament']}/{r['stage']}")
+        existing[r["match_id"]] = r
+    write_csv(STAGE_MAP_CSV, ["match_id", "tournament", "stage", "stage_source"],
+              sorted(existing.values(), key=lambda r: (r["tournament"], r["stage"], r["match_id"])))
+
+
+def build_map(pairs_csv: Path) -> None:
+    csv.field_size_limit(sys.maxsize)
+    pairs: dict[str, set] = {}
+    with pairs_csv.open(newline="") as fh:
+        for r in csv.DictReader(fh):
+            pairs.setdefault(r["match_id"], set()).add(r["platform_game_id"])
+    rows = map_matches(pairs)
+    merge_stage_map(rows)
+    print(f"{len(rows)}경기 → {STAGE_MAP_CSV}")
 
 
 def main() -> None:

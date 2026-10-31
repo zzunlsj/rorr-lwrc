@@ -69,7 +69,8 @@ def parse_death_recap(recap) -> dict[int, float]:
         raise TypeError(f"deathRecap은 list여야 합니다: {type(recap).__name__}")
     out: dict[int, float] = defaultdict(float)
     for entry in recap:
-        if entry.get("source") != "Champion":
+        # 목록 끝에 null 항목이 섞인 킬이 있다 (2026 전체 19,965킬 중 3건). 출처·딜이 없으므로 건너뛴다
+        if entry is None or entry.get("source") != "Champion":
             continue
         dmg = sum(
             b.get("physicalDmg", 0) + b.get("magicDmg", 0) + b.get("trueDmg", 0)
@@ -122,3 +123,25 @@ def tick_interval_stats(times_ms: Sequence[float]) -> dict:
 
 # 규칙 8 — ward_placed / ward_killed / item_purchased는 피드에 존재한다 (수집 결손 아님)
 FEED_EVENTS_PRESENT = ("ward_placed", "ward_killed", "item_purchased")
+
+
+# 결정 22 — 메타 결측 대체: raw 우선, 없으면 Kazel 메타(session.json). 승자는 Leaguepedia와 교차 확인
+SIDE_TEAM = {"blue": 100, "red": 200, 100: 100, 200: 200, "100": 100, "200": 200}
+
+
+def resolve_winner(raw_team: int | None, kazel_side, leaguepedia_side) -> tuple[int | None, str]:
+    """(승리 팀 100|200, 출처). raw game_end가 없으면 Kazel·Leaguepedia가 일치할 때만 쓴다. 어긋나면 None → 제외 대상."""
+    if raw_team is not None:
+        return int(raw_team), "raw_game_end"
+    kazel, lp = SIDE_TEAM.get(kazel_side), SIDE_TEAM.get(leaguepedia_side)
+    if kazel is not None and kazel == lp:
+        return kazel, "kazel+leaguepedia"
+    return None, "unresolved"
+
+
+def resolve_patch(game_version: str, kazel_patch: str | None) -> tuple[str, str]:
+    if game_version:
+        return ".".join(game_version.split(".")[:2]), "raw_game_info"
+    if kazel_patch:
+        return kazel_patch, "kazel"
+    return "", "unresolved"
