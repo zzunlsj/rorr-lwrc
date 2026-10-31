@@ -1,6 +1,6 @@
 match_id,tournament,stage,stage_source
-115548147900487905,LCK_R3-4,Legend,inferred:timeslot_0800(T1-HLE)
-115548147900553477,LCK_R3-4,Legend,inferred:timeslot_0800(DK-KT)
-115548147900684633,LCK_R3-4,Rise,inferred:timeslot_1000(BRO-BFX)
-115548147900684649,LCK_R3-4,Rise,inferred:timeslot_1000(KRX-BFX)
-115548147900684669,LCK_R3-4,Rise,inferred:timeslot_1000(NS-DNS)
+115548147900487905,LCK_R3-4,Legend,leaguepedia:LCK/2026 Season/Rounds 3-4_Week 11_7
+115548147900553477,LCK_R3-4,Legend,leaguepedia:LCK/2026 Season/Rounds 3-4_Week 11_9
+115548147900684633,LCK_R3-4,Rise,leaguepedia:LCK/2026 Season/Rounds 3-4_Week 11_6
+115548147900684649,LCK_R3-4,Rise,leaguepedia:LCK/2026 Season/Rounds 3-4_Week 11_10
+115548147900684669,LCK_R3-4,Rise,leaguepedia:LCK/2026 Season/Rounds 3-4_Week 11_8
