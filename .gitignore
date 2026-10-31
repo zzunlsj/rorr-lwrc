@@ -1,0 +1,13 @@
+# raw data and large artifacts — never commit
+data/
+*.tar
+*.tar.gz
+*.parquet
+*.duckdb
+*.duckdb.wal
+out/
+# python
+__pycache__/
+*.pyc
+.venv/
+.env
