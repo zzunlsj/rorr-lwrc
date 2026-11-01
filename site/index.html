@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LwRC+ 2026</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1c1c1a;--mute:#6b6b66;--line:#e4e3de;--acc:#2f5bd3;--pos:#1f7a4d;--neg:#b3392f;--chip:#efeee9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--panel:#1d1d1b;--ink:#ecebe6;--mute:#9a9992;--line:#30302c;--acc:#7c9cff;--pos:#5cc48d;--neg:#ef7d72;--chip:#272724}}
+:root[data-theme="dark"]{--bg:#151514;--panel:#1d1d1b;--ink:#ecebe6;--mute:#9a9992;--line:#30302c;--acc:#7c9cff;--pos:#5cc48d;--neg:#ef7d72;--chip:#272724}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+header h1{margin:0;font-size:22px;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 12px}
+.seg{display:inline-flex;background:var(--chip);border-radius:8px;padding:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;color:var(--mute);padding:6px 10px;border-radius:6px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+input[type=search],select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+input[type=search]{flex:1 1 200px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--panel);color:var(--mute);font-weight:600;font-size:12px;cursor:pointer;user-select:none}
+th.l,td.l{text-align:left}
+th.sorted{color:var(--ink)}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--chip)}
+td.ix{font-weight:700}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;background:var(--chip);color:var(--mute)}
+tr.detail td{background:var(--bg);text-align:left;white-space:normal;cursor:default}
+.dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 18px;padding:4px 0}
+.dl div span{display:block;color:var(--mute);font-size:12px}
+.form b{display:inline-block;width:16px;text-align:center;font-size:11px;border-radius:3px;margin-right:2px;color:#fff}
+.form .W{background:var(--pos)}.form .L{background:var(--neg)}
+.meta{color:var(--mute);font-size:12px;margin-top:12px}
+.meta ul{margin:6px 0 0;padding-left:18px}
+.count{color:var(--mute);font-size:12px;margin-left:auto}
+#theme{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header style="display:flex;gap:12px;align-items:flex-start">
+  <div style="flex:1">
+    <h1>LwRC+ 2026</h1>
+    <p>선수 퍼포먼스 참고 지표 — 선택한 대회 범위 안에서 같은 포지션 평균을 100으로 계산. 승리 기여 지표가 아니다.</p>
+  </div>
+  <button id="theme" title="테마 전환">◐</button>
+</header>
+
+<div class="bar">
+  <div class="seg" id="view"><button data-v="players" class="on">선수</button><button data-v="teams">팀</button></div>
+  <div class="seg" id="scope"></div>
+</div>
+<div class="bar">
+  <input type="search" id="q" placeholder="선수·팀 검색 (예: Faker, GEN)">
+  <select id="role"><option value="">전 포지션</option><option>TOP</option><option>JG</option><option>MID</option><option>BOT</option><option>SUP</option></select>
+  <select id="lg"><option value="">전 리그</option></select>
+  <select id="ming"><option value="0">게임 수 0+</option><option value="10" selected>10+</option><option value="25">25+</option></select>
+  <span class="count" id="count"></span>
+</div>
+
+<div class="card"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+<div class="meta" id="meta"></div>
+</div>
+
+<script>
+const SCOPES=[["all","전체"],["lck","LCK"],["lck_s1","LCK S1"],["lck_s2","LCK S2"],["lck_s3","LCK S3"],["fs","First Stand"],["msi","MSI"],["worlds","Worlds"]];
+const fmt=(v,d=0)=>v==null?"—":Number(v).toLocaleString("ko-KR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const sgn=v=>v==null?"":v>0?"pos":v<0?"neg":"";
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const COLS={
+  players:[
+    {k:"role_rank",h:"#",f:r=>r.role_rank==null?"—":`${r.role_rank}<span class="tag">/${r.role_n}</span>`},
+    {k:"name",h:"선수",l:1,f:r=>`<b>${esc(r.name)}</b>`},
+    {k:"team",h:"팀",l:1,f:r=>`${esc(r.team)} <span class="tag">${esc(r.lg)}</span>`},
+    {k:"role",h:"포지션",l:1},
+    {k:"g",h:"게임"},
+    {k:"ix",h:"LwRC+",c:"ix",f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
+    {k:"pg",h:"Gold +/G",f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
+    {k:"rate",h:"LwRC/분",f:r=>fmt(r.rate,1)},
+    {k:"team_share",h:"팀 내 비중",f:r=>r.team_share==null?"—":fmt(r.team_share,1)+"%"},
+  ],
+  teams:[
+    {k:"team",h:"팀",l:1,f:r=>`<b>${esc(r.team)}</b>`},
+    {k:"lg",h:"리그",l:1},
+    {k:"ix",h:"팀 LwRC+",c:"ix",f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
+    {k:"pg",h:"Gold +/G",f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
+    {k:"W",h:"시리즈",f:r=>`${r.W}–${r.L}`},
+    {k:"sw",h:"게임",f:r=>`${r.sw}–${r.sl}`},
+    {k:"wr",h:"게임 승률",f:r=>r.wr==null?"—":fmt(r.wr*100,1)+"%"},
+    {k:"form",h:"최근 5",l:1,f:r=>`<span class="form">${[...(r.form||"")].map(c=>`<b class="${c}">${c}</b>`).join("")}</span>`},
+    {k:"top_role",h:"최고 포지션",l:1},
+  ]};
+const st={view:"players",scope:"all",q:"",role:"",lg:"",ming:10,sort:{players:["ix",-1],teams:["ix",-1]},open:null};
+let D={};
+
+function load(){try{const s=JSON.parse(localStorage.getItem("lwrc_ui")||"{}");Object.assign(st,s,{open:null})}catch(e){}}
+function save(){try{const{open,...s}=st;localStorage.setItem("lwrc_ui",JSON.stringify(s))}catch(e){}}
+
+function rows(){
+  const src=st.view==="players"?D.players.players:D.teams.teams, q=st.q.trim().toLowerCase();
+  let r=src.filter(x=>x.scope===st.scope&&(x.g??0)>=st.ming&&(!st.lg||x.lg===st.lg));
+  if(st.view==="players"&&st.role)r=r.filter(x=>x.role===st.role);
+  if(q)r=r.filter(x=>(x.name||"").toLowerCase().includes(q)||(x.team||"").toLowerCase().includes(q));
+  const[k,dir]=st.sort[st.view];
+  return r.sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return -1;return(typeof x==="string"?x.localeCompare(y):x-y)*dir});
+}
+function detail(r){
+  if(st.view==="players")return `<div class="dl">
+    <div><span>LwRC (합)</span>${fmt(r.lwrc)}</div><div><span>플레이 분</span>${fmt(r.minutes,1)}</div>
+    <div><span>C 생산</span>${fmt(r.c)}</div><div><span>　실현 골드</span>${fmt(r.c_gold)}</div><div><span>　가속 C 배분</span>${fmt(r.c_pie)}</div>
+    <div><span>D 차단</span>${fmt(r.d)}</div><div><span>Risk 데스</span><b class="neg">${fmt(r.risk)}</b></div>
+    <div><span>팀 내 비중</span>${r.team_share==null?"—":fmt(r.team_share,1)+"% (골드 기여 기준)"}</div></div>`;
+  const p=D.players.players.filter(x=>x.scope===st.scope&&x.team===r.team).sort((a,b)=>b.minutes-a.minutes);
+  return `<div class="dl">${p.map(x=>`<div><span>${esc(x.role)} · ${x.g}게임</span><b>${esc(x.name)}</b> ${fmt(x.ix)}</div>`).join("")}</div>`;
+}
+function render(){
+  document.querySelectorAll("#view button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.view));
+  document.querySelectorAll("#scope button").forEach(b=>b.classList.toggle("on",b.dataset.s===st.scope));
+  document.getElementById("role").style.display=st.view==="players"?"":"none";
+  const cols=COLS[st.view],[sk,sd]=st.sort[st.view];
+  document.getElementById("th").innerHTML="<tr>"+cols.map(c=>`<th data-k="${c.k}" class="${c.l?"l":""} ${c.k===sk?"sorted":""}">${c.h}${c.k===sk?(sd<0?" ▾":" ▴"):""}</th>`).join("")+"</tr>";
+  const r=rows();
+  document.getElementById("tb").innerHTML=r.map((x,i)=>{
+    const id=st.view==="players"?x.player_id:x.team, row=`<tr data-id="${esc(id)}">`+cols.map(c=>`<td class="${c.l?"l":""} ${c.c||""}">${c.f?c.f(x):esc(x[c.k])}</td>`).join("")+"</tr>";
+    return st.open===id?row+`<tr class="detail"><td colspan="${cols.length}">${detail(x)}</td></tr>`:row;
+  }).join("")||`<tr><td colspan="${cols.length}" class="l" style="color:var(--mute)">조건에 맞는 결과가 없습니다.</td></tr>`;
+  document.getElementById("count").textContent=`${r.length}${st.view==="players"?"명":"팀"}`;
+  save();
+}
+function init(){
+  load();
+  document.getElementById("scope").innerHTML=SCOPES.map(([s,n])=>`<button data-s="${s}">${n}</button>`).join("");
+  const lgs=[...new Set(D.players.players.map(x=>x.lg).filter(Boolean))].sort();
+  document.getElementById("lg").innerHTML+=lgs.map(l=>`<option>${l}</option>`).join("");
+  for(const[id,key,num]of[["q","q"],["role","role"],["lg","lg"],["ming","ming",1]]){
+    const el=document.getElementById(id);el.value=st[key];
+    el.addEventListener("input",()=>{st[key]=num?+el.value:el.value;st.open=null;render()});
+  }
+  document.getElementById("view").onclick=e=>{if(e.target.dataset.v){st.view=e.target.dataset.v;st.open=null;render()}};
+  document.getElementById("scope").onclick=e=>{if(e.target.dataset.s){st.scope=e.target.dataset.s;st.open=null;render()}};
+  document.getElementById("th").onclick=e=>{const k=e.target.closest("th")?.dataset.k;if(!k)return;const s=st.sort[st.view];st.sort[st.view]=s[0]===k?[k,-s[1]]:[k,typeof rows()[0]?.[k]==="string"?1:-1];render()};
+  document.getElementById("tb").onclick=e=>{const tr=e.target.closest("tr[data-id]");if(!tr)return;st.open=st.open===tr.dataset.id?null:tr.dataset.id;render()};
+  document.getElementById("theme").onclick=()=>{const h=document.documentElement,dark=h.dataset.theme?h.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;h.dataset.theme=dark?"light":"dark"};
+  const m=D.meta,g=m.games_by_tournament;
+  document.getElementById("meta").innerHTML=`데이터: ${Object.entries(g).map(([t,n])=>`${t} ${n}`).join(" · ")} (총 ${Object.values(g).reduce((a,b)=>a+b,0)}게임)
+    · 가중 ${esc(D.players.allocation_method)} · ${esc(D.players.version)} · 생성 ${esc(D.players.generated_at.slice(0,10))}
+    <ul>${m.notes.map(n=>`<li>${esc(n)}</li>`).join("")}<li>순위(#)는 ${m.min_games_for_ranking}게임 이상 선수만. 행을 누르면 C·D·Risk 성분을 볼 수 있다.</li></ul>`;
+  render();
+}
+Promise.all(["players","teams","meta"].map(n=>fetch(`data/${n}.json`).then(r=>r.json()))).then(([p,t,m])=>{D={players:p,teams:t,meta:m};init()})
+  .catch(e=>{document.getElementById("tb").innerHTML=`<tr><td class="l">데이터를 불러오지 못했습니다: ${esc(e.message)}</td></tr>`});
+</script>
+</body>
+</html>
