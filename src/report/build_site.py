@@ -21,7 +21,7 @@ SITE_DATA = ROOT / "site" / "data"
 def main() -> None:
     cfg = yaml.safe_load(LWRC_YAML.read_text())
     SITE_DATA.mkdir(parents=True, exist_ok=True)
-    for name in ("players.json", "teams.json"):
+    for name in ("players.json", "teams.json", "gold.json"):
         shutil.copyfile(OUTPUTS / "web" / name, SITE_DATA / name)
     games = (pl.scan_parquet(L3 / "game_player_lwrc" / "**" / "*.parquet", hive_partitioning=False)
              .select("tournament", "game_id").unique().group_by("tournament").agg(pl.len().alias("games"))

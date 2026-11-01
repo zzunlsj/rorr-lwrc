@@ -3,7 +3,7 @@
 LwRC+ (LoL weighted Resources Created Plus) — RORR의 **선수 퍼포먼스 참고 지표**, 2026 시즌 산출.
 승리 기여 지표가 아니다. 승리 해석은 다른 수치와 결합해 따로 다룬다 (결정 1).
 
-- **결과 조회**: https://zzunlsj.github.io/rorr-lwrc/ (선수·팀 검색, scope 8개)
+- **결과 조회**: https://zzunlsj.github.io/rorr-lwrc/ (선수·팀 검색, scope 8개, LwRC+ / 실제 골드 탭)
 - 범위: 2026 LCK 전 일정 + First Stand + MSI + Worlds (대회 전체, 678게임 · 255경기 반영)
 - 출력: scope 8개 × 선수/팀 — `all`, `lck`, `lck_s1`~`lck_s3`, `fs`, `msi`, `worlds`
 - 정본: `docs/spec/` · `docs/contracts/` · `config/lwrc.yaml` · 결정 기록 `docs/decisions.md`
@@ -39,9 +39,10 @@ LwRC+ = 100 × (선수 LwRC/분) ÷ (같은 scope · 같은 포지션 평균 LwR
 | 4 배분 β | `features.alloc_features` → `features.alloc_train` | 관여 피처, β, 선수 지분 |
 | 5 게임 LwRC | `metrics.game_lwrc` | `data/l3/game_player_lwrc/` (변형 4종) |
 | 6 시즌 LwRC+ | `ingest.team_leagues` → `metrics.season` | `outputs/web/players.json` · `teams.json` |
+| 실제 골드 | `metrics.gold` | `outputs/web/gold.json` — 게임 내 totalGold만으로 Gold+ · GPM · 15분 골드 차 (LwRC+ 비교용) |
 | 웹 | `report.build_site` | `site/data/` → GitHub Pages 자동 배포 |
 
-- 테스트: `PYTHONPATH=src uv run pytest` (98개)
+- 테스트: `PYTHONPATH=src uv run pytest` (100개)
 - 단계별 보고서: `specs/step*_report_*.md` · 실측 기록: `manifest/run_log.md`
 - `data/`와 `outputs/`는 커밋하지 않는다. 공개되는 것은 `site/data/`의 L4 JSON 복사본뿐이다.
 

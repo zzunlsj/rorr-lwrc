@@ -57,6 +57,7 @@ tr.detail td{background:var(--bg);text-align:left;white-space:normal;cursor:defa
 </header>
 
 <div class="bar">
+  <div class="seg" id="metric"><button data-m="lwrc" class="on">LwRC+</button><button data-m="gold">실제 골드</button></div>
   <div class="seg" id="view"><button data-v="players" class="on">선수</button><button data-v="teams">팀</button></div>
   <div class="seg" id="scope"></div>
 </div>
@@ -102,9 +103,56 @@ const HELP={
   cpie:"교전 클러스터에서 우리 팀 골드 수입 속도가 빨라진 몫(스노우볼)을, 관여도(딜·어시스트·피해 흡수·교전 존재·시야 제공/차단·CC·보호)에 따라 나눈 값.",
   d:"D 차단 = 교전에서 상대 팀 골드 수입 속도를 떨어뜨린 몫을 관여도에 따라 나눈 값.",
   risk:"본인 데스의 비용: 생존 인원 −1, 부활 대기, 상대에게 넘어간 현상금·셧다운. 항상 음수다.",
+  // 실제 골드 — 게임 내 관측값(stats_update totalGold)만 사용, G 모델·배분 없음
+  grank:"같은 범위·같은 포지션 안에서 Gold+ 순위 / 대상 선수 수. 최소 게임 수 이상인 선수만.",
+  gplus:"Gold+ = 100 × 선수 분당 골드(GPM) ÷ 같은 범위·같은 포지션 평균 GPM.\n골드는 게임 내 totalGold(종료 시점, 시작 골드 포함) 그대로다. 100이 평균.",
+  gpg:"실제 골드 +/G = (선수 GPM − 같은 포지션 평균 GPM) × 플레이 분 ÷ 게임 수.\n평균 선수보다 한 게임에 실제로 몇 골드 더 벌었는지.",
+  gpm:"분당 골드 = 범위 안 종료 totalGold 합 ÷ 플레이 분 합.",
+  gd15:"15분 골드 차 = 15:00 시점 본인 totalGold − 같은 포지션 상대 선수 totalGold의 게임 평균. 15분 전에 끝난 게임은 빠진다.",
+  gshare:"골드 비중 = 본인 종료 골드 합 ÷ 같은 게임들의 팀 종료 골드 합.",
+  glx:"같은 범위의 LwRC+ (비교용). 게임 내 골드가 아니라 팀 기대 골드를 움직인 양 기준이다.",
+  gdiff:"순위 차이 = Gold+ 순위 − LwRC+ 순위 (같은 범위·포지션, 최소 게임 수 이상).\n양수(▲)면 실제로 번 골드 순위보다 LwRC+ 순위가 높다 — 교전 가속·차단(C·D)이나 적은 데스로 더 높게 평가됐다. 음수(▼)면 반대.\n두 지표는 퍼진 폭이 달라(LwRC+ 표준편차 약 10, Gold+ 약 3.7) 값의 차이 대신 순위를 비교한다.",
+  tgdiff:"순위 차이 = 팀 Gold+ 순위 − 팀 LwRC+ 순위 (같은 범위). 양수(▲)면 LwRC+에서 더 높은 순위.",
+  tgplus:"팀 Gold+ = 100 × 팀 분당 골드 ÷ 같은 범위 전체 팀 평균 분당 골드.",
+  tgpg:"팀 실제 골드 +/G = Σ 소속 선수 (GPM − 포지션 평균 GPM) × 그 팀에서 뛴 분 ÷ 팀 게임 수.",
+  tgpm:"팀 분당 골드 = 팀 종료 totalGold 합 ÷ 게임 시간 합.",
+  tgd15:"15분 팀 골드 차(5명 라인 상대 차의 합) 게임 평균.",
+  tgdend:"게임 종료 시 팀 골드 − 상대 팀 골드의 게임 평균.",
+  twr:"게임 승률 (이 표에 반영된 게임 기준 — raw 누락 게임 제외).",
+  tglx:"같은 범위의 팀 LwRC+ (비교용).",
 };
+const rk=v=>v==null?"—":v===0?"0":`<span class="${sgn(v)}">${v>0?"▲":"▼"}${Math.abs(v)}</span>`;
+const plus=(v,d=0)=>v==null?"—":`<span class="${sgn(v)}">${v>0?"+":""}${fmt(v,d)}</span>`;
+const IX=v=>`<span class="${sgn(v-100)}">${fmt(v)}</span>`;
 const COLS={
-  players:[
+  gold_players:[
+    {k:"role_rank",h:"#",t:HELP.grank,f:r=>r.role_rank==null?"—":`${r.role_rank}<span class="tag">/${r.role_n}</span>`},
+    {k:"name",h:"선수",l:1,f:r=>`<b>${esc(r.name)}</b>`},
+    {k:"team",h:"팀",l:1,t:HELP.team,f:r=>`${esc(r.team)} <span class="tag">${esc(r.lg)}</span>`},
+    {k:"role",h:"포지션",l:1,t:HELP.role},
+    {k:"g",h:"게임",t:HELP.g},
+    {k:"gold_plus",h:"Gold+",c:"ix",t:HELP.gplus,f:r=>IX(r.gold_plus)},
+    {k:"gold_pg",h:"실제 골드 +/G",t:HELP.gpg,f:r=>plus(r.gold_pg)},
+    {k:"gpm",h:"분당 골드",t:HELP.gpm,f:r=>fmt(r.gpm,1)},
+    {k:"gd15",h:"15분 골드 차",t:HELP.gd15,f:r=>plus(r.gd15)},
+    {k:"gold_share",h:"골드 비중",t:HELP.gshare,f:r=>fmt(r.gold_share,1)+"%"},
+    {k:"lwrc_ix",h:"LwRC+",t:HELP.glx,f:r=>`${IX(r.lwrc_ix)}${r.lwrc_rank==null?"":`<span class="tag">${r.lwrc_rank}위</span>`}`},
+    {k:"rank_diff",h:"순위 차이",t:HELP.gdiff,f:r=>rk(r.rank_diff)},
+  ],
+  gold_teams:[
+    {k:"team",h:"팀",l:1,f:r=>`<b>${esc(r.team)}</b>`},
+    {k:"lg",h:"리그",l:1,t:HELP.team},
+    {k:"g",h:"게임",t:HELP.g},
+    {k:"gold_plus",h:"팀 Gold+",c:"ix",t:HELP.tgplus,f:r=>IX(r.gold_plus)},
+    {k:"gold_pg",h:"실제 골드 +/G",t:HELP.tgpg,f:r=>plus(r.gold_pg)},
+    {k:"gpm",h:"팀 분당 골드",t:HELP.tgpm,f:r=>fmt(r.gpm,1)},
+    {k:"gd15",h:"15분 골드 차",t:HELP.tgd15,f:r=>plus(r.gd15)},
+    {k:"gd_end",h:"종료 골드 차",t:HELP.tgdend,f:r=>plus(r.gd_end)},
+    {k:"wr",h:"게임 승률",t:HELP.twr,f:r=>fmt(r.wr*100,1)+"%"},
+    {k:"lwrc_ix",h:"팀 LwRC+",t:HELP.tglx,f:r=>`${IX(r.lwrc_ix)}<span class="tag">${r.lwrc_rank}위</span>`},
+    {k:"rank_diff",h:"순위 차이",t:HELP.tgdiff,f:r=>rk(r.rank_diff)},
+  ],
+  lwrc_players:[
     {k:"role_rank",h:"#",t:HELP.rank,f:r=>r.role_rank==null?"—":`${r.role_rank}<span class="tag">/${r.role_n}</span>`},
     {k:"name",h:"선수",l:1,f:r=>`<b>${esc(r.name)}</b>`},
     {k:"team",h:"팀",l:1,t:HELP.team,f:r=>`${esc(r.team)} <span class="tag">${esc(r.lg)}</span>`},
@@ -115,7 +163,7 @@ const COLS={
     {k:"rate",h:"LwRC/분",t:HELP.rate,f:r=>fmt(r.rate,1)},
     {k:"team_share",h:"팀 내 비중",t:HELP.share,f:r=>r.team_share==null?"—":fmt(r.team_share,1)+"%"},
   ],
-  teams:[
+  lwrc_teams:[
     {k:"team",h:"팀",l:1,f:r=>`<b>${esc(r.team)}</b>`},
     {k:"lg",h:"리그",l:1,t:HELP.team},
     {k:"ix",h:"팀 LwRC+",c:"ix",t:HELP.tix,f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
@@ -127,21 +175,28 @@ const COLS={
     {k:"top_role",h:"최고 포지션",l:1,t:HELP.top},
   ]};
 const q=t=>t?`<span class="help" tabindex="0" role="button" aria-label="도움말" data-help="${esc(t)}">?</span>`:"";
-const st={view:"players",scope:"all",q:"",role:"",lg:"",ming:10,sort:{players:["ix",-1],teams:["ix",-1]},open:null};
+const st={metric:"lwrc",view:"players",scope:"all",q:"",role:"",lg:"",ming:10,sort:{lwrc_players:["ix",-1],lwrc_teams:["ix",-1],gold_players:["gold_plus",-1],gold_teams:["gold_plus",-1]},open:null};
+const key=()=>`${st.metric}_${st.view}`;
 let D={};
 
-function load(){try{const s=JSON.parse(localStorage.getItem("lwrc_ui")||"{}");Object.assign(st,s,{open:null})}catch(e){}}
-function save(){try{const{open,...s}=st;localStorage.setItem("lwrc_ui",JSON.stringify(s))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem("lwrc_ui2")||"{}");Object.assign(st,s,{open:null})}catch(e){}}
+function save(){try{const{open,...s}=st;localStorage.setItem("lwrc_ui2",JSON.stringify(s))}catch(e){}}
 
 function rows(){
-  const src=st.view==="players"?D.players.players:D.teams.teams, q=st.q.trim().toLowerCase();
+  const src=st.metric==="gold"?D.gold[st.view]:st.view==="players"?D.players.players:D.teams.teams, q=st.q.trim().toLowerCase();
   let r=src.filter(x=>x.scope===st.scope&&(x.g??0)>=st.ming&&(!st.lg||x.lg===st.lg));
   if(st.view==="players"&&st.role)r=r.filter(x=>x.role===st.role);
   if(q)r=r.filter(x=>(x.name||"").toLowerCase().includes(q)||(x.team||"").toLowerCase().includes(q));
-  const[k,dir]=st.sort[st.view];
+  const[k,dir]=st.sort[key()];
   return r.sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return -1;return(typeof x==="string"?x.localeCompare(y):x-y)*dir});
 }
 function detail(r){
+  if(st.metric==="gold"){
+    if(st.view==="players")return `<div class="dl"><div><span>종료 골드 합</span>${fmt(r.gold)}</div><div><span>플레이 분${q(HELP.min)}</span>${fmt(r.minutes,1)}</div>
+      <div><span>15분 골드 차 표본</span>${r.g15}게임</div><div><span>Gold+ → LwRC+</span>${fmt(r.gold_plus)} → ${fmt(r.lwrc_ix)}</div></div>`;
+    const p=D.gold.players.filter(x=>x.scope===st.scope&&x.team===r.team).sort((a,b)=>b.minutes-a.minutes);
+    return `<div class="dl">${p.map(x=>`<div><span>${esc(x.role)} · ${x.g}게임</span><b>${esc(x.name)}</b> Gold+ ${fmt(x.gold_plus)} · LwRC+ ${fmt(x.lwrc_ix)}</div>`).join("")}</div>`;
+  }
   if(st.view==="players")return `<div class="dl">
     <div><span>LwRC (합)${q(HELP.lwrc)}</span>${fmt(r.lwrc)}</div><div><span>플레이 분${q(HELP.min)}</span>${fmt(r.minutes,1)}</div>
     <div><span>C 생산${q(HELP.c)}</span>${fmt(r.c)}</div><div><span>　실현 골드${q(HELP.cgold)}</span>${fmt(r.c_gold)}</div><div><span>　가속 C 배분${q(HELP.cpie)}</span>${fmt(r.c_pie)}</div>
@@ -151,10 +206,11 @@ function detail(r){
   return `<div class="dl">${p.map(x=>`<div><span>${esc(x.role)} · ${x.g}게임</span><b>${esc(x.name)}</b> ${fmt(x.ix)}</div>`).join("")}</div>`;
 }
 function render(){
+  document.querySelectorAll("#metric button").forEach(b=>b.classList.toggle("on",b.dataset.m===st.metric));
   document.querySelectorAll("#view button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.view));
   document.querySelectorAll("#scope button").forEach(b=>b.classList.toggle("on",b.dataset.s===st.scope));
   document.getElementById("role").style.display=st.view==="players"?"":"none";
-  const cols=COLS[st.view],[sk,sd]=st.sort[st.view];
+  const cols=COLS[key()],[sk,sd]=st.sort[key()];
   document.getElementById("th").innerHTML="<tr>"+cols.map(c=>`<th data-k="${c.k}" class="${c.l?"l":""} ${c.k===sk?"sorted":""}">${c.h}${q(c.t)}${c.k===sk?(sd<0?" ▾":" ▴"):""}</th>`).join("")+"</tr>";
   const r=rows();
   document.getElementById("tb").innerHTML=r.map((x,i)=>{
@@ -173,6 +229,7 @@ function init(){
     const el=document.getElementById(id);el.value=st[key];
     el.addEventListener("input",()=>{st[key]=num?+el.value:el.value;st.open=null;render()});
   }
+  document.getElementById("metric").onclick=e=>{if(e.target.dataset.m){st.metric=e.target.dataset.m;st.open=null;render()}};
   document.getElementById("view").onclick=e=>{if(e.target.dataset.v){st.view=e.target.dataset.v;st.open=null;render()}};
   document.getElementById("scope").onclick=e=>{if(e.target.dataset.s){st.scope=e.target.dataset.s;st.open=null;render()}};
   // 도움말: 마우스 오버·키보드 포커스로 표시, 터치는 탭으로 토글. 정렬·행 펼침으로 번지지 않게 막는다.
@@ -187,16 +244,16 @@ function init(){
   document.addEventListener("focusout",e=>{if(e.target.closest(".help"))hide()});
   document.addEventListener("click",e=>{const el=e.target.closest(".help");if(el){e.stopPropagation();tip._el===el&&!tip.hidden?hide():show(el)}else hide()},true);
   addEventListener("scroll",hide,true);
-  document.getElementById("th").onclick=e=>{const k=e.target.closest("th")?.dataset.k;if(!k)return;const s=st.sort[st.view];st.sort[st.view]=s[0]===k?[k,-s[1]]:[k,typeof rows()[0]?.[k]==="string"?1:-1];render()};
+  document.getElementById("th").onclick=e=>{const k=e.target.closest("th")?.dataset.k;if(!k)return;const s=st.sort[key()];st.sort[key()]=s[0]===k?[k,-s[1]]:[k,typeof rows()[0]?.[k]==="string"?1:-1];render()};
   document.getElementById("tb").onclick=e=>{const tr=e.target.closest("tr[data-id]");if(!tr)return;st.open=st.open===tr.dataset.id?null:tr.dataset.id;render()};
   document.getElementById("theme").onclick=()=>{const h=document.documentElement,dark=h.dataset.theme?h.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;h.dataset.theme=dark?"light":"dark"};
   const m=D.meta,g=m.games_by_tournament;
   document.getElementById("meta").innerHTML=`데이터: ${Object.entries(g).map(([t,n])=>`${t} ${n}`).join(" · ")} (총 ${Object.values(g).reduce((a,b)=>a+b,0)}게임)
     · 가중 ${esc(D.players.allocation_method)} · ${esc(D.players.version)} · 생성 ${esc(D.players.generated_at.slice(0,10))}
-    <ul>${m.notes.map(n=>`<li>${esc(n)}</li>`).join("")}<li>순위(#)는 ${m.min_games_for_ranking}게임 이상 선수만. 행을 누르면 C·D·Risk 성분을 볼 수 있다.</li></ul>`;
+    <ul>${m.notes.map(n=>`<li>${esc(n)}</li>`).join("")}<li>순위(#)는 ${m.min_games_for_ranking}게임 이상 선수만. 행을 누르면 C·D·Risk 성분을 볼 수 있다.</li><li>실제 골드 탭은 게임 내 totalGold 관측값만으로 계산했다 (G 모델·배분 없음). LwRC+와 같은 게임·범위·포지션 기준이라 나란히 비교할 수 있다.</li></ul>`;
   render();
 }
-Promise.all(["players","teams","meta"].map(n=>fetch(`data/${n}.json`).then(r=>r.json()))).then(([p,t,m])=>{D={players:p,teams:t,meta:m};init()})
+Promise.all(["players","teams","meta","gold"].map(n=>fetch(`data/${n}.json`).then(r=>r.json()))).then(([p,t,m,g])=>{D={players:p,teams:t,meta:m,gold:g};init()})
   .catch(e=>{document.getElementById("tb").innerHTML=`<tr><td class="l">데이터를 불러오지 못했습니다: ${esc(e.message)}</td></tr>`});
 </script>
 </body>

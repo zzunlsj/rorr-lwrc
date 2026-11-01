@@ -89,6 +89,7 @@ season:
   winsorize_sigma: 3
   length_corr_threshold: 0.2
   length_buckets_min: [25, 35]   # 층화 시: ≤25 / 25~35 / 35+
+  gold_lane_minute: 15           # 실제 골드 비교(metrics.gold): 라인 상대 골드 차 기준 시각 (GD@15)
   # 웹 lg 필드 — 팀의 2026 지역 리그 (Leaguepedia Tournaments.League → 약칭). src/ingest/team_leagues.py
   league_codes:
     LoL Champions Korea: LCK
