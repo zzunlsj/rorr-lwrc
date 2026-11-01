@@ -10,6 +10,8 @@
 - presence: 클러스터 틱 중 "생존 + 어떤 씨앗 위치든 반경 presence_radius 안"인 틱 비율 (OR 판정).
 - vision_provided: 시야창 [s − 30초, e] ∩ 와드 생존 구간 (초), 본인 설치·시야 대상 종류·위치가 시야 구역(씨앗 반경 vision_radius 합집합) 안.
 - vision_denied: 시야창 동안 시야 구역 안에서 본인이 제거한 상대 와드 수 (시야 대상 종류만, 결정 16).
+- vision (회귀 피처, 결정 32): vision_provided/60 × place_per_min + vision_denied × clear — 라이엇 시야 점수 비율(설치 1분 = 1, 제거 = 2).
+  vision_provided·vision_denied는 원값으로 함께 남긴다 (리포트용).
 """
 
 import argparse
@@ -26,7 +28,7 @@ from ingest.leaguepedia import LWRC_YAML
 
 TL = L2 / "timeline"
 OUT = L2 / "alloc" / "features"
-FEATURES = ["dmg", "assist", "absorb", "presence", "vision_provided", "vision_denied", "cc", "protect"]
+FEATURES = ["dmg", "assist", "absorb", "presence", "vision", "cc", "protect"]
 
 
 def _read(base, table: str, meta: dict) -> pl.DataFrame:
@@ -114,7 +116,10 @@ def build_features(meta: dict, cfg: dict) -> pl.DataFrame:
                                  + a["healed_teammates"][i_e] - a["healed_teammates"][i_s]),
                 "kill_killer": int((kj["killer"] == p).sum()),
             })
-    return pl.DataFrame(rows).with_columns(pl.lit(meta["game_id"]).alias("game_id"))
+    vw = acfg["vision_weights"]
+    return pl.DataFrame(rows).with_columns(
+        (pl.col("vision_provided") / 60 * vw["place_per_min"] + pl.col("vision_denied") * vw["clear"]).alias("vision"),
+        pl.lit(meta["game_id"]).alias("game_id"))
 
 
 def build_one(meta: dict, cfg: dict) -> int:

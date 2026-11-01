@@ -1,6 +1,6 @@
 {
  "version": "lwrc_v1.0-rev",
- "generated_at": "2026-11-01T07:58:24+00:00",
+ "generated_at": "2026-11-01T09:08:50+00:00",
  "allocation_method": "regression",
  "g_model_version": "lwrc_v1.0-rev+ridge-crossfit5+snapshot-8eb212cb109c4bbe",
  "teams": [
@@ -49,7 +49,7 @@
    "form": "LWLWW",
    "g": 134,
    "ix": 109,
-   "pg": 7192,
+   "pg": 7193,
    "top_role": "SUP"
   },
   {
@@ -113,7 +113,7 @@
    "form": "WLWWW",
    "g": 124,
    "ix": 102,
-   "pg": 1855,
+   "pg": 1850,
    "top_role": "BOT"
   },
   {
@@ -177,7 +177,7 @@
    "form": "LWWLL",
    "g": 102,
    "ix": 97,
-   "pg": -2505,
+   "pg": -2504,
    "top_role": "BOT"
   },
   {
@@ -225,7 +225,7 @@
    "form": "LL",
    "g": 9,
    "ix": 96,
-   "pg": -3537,
+   "pg": -3555,
    "top_role": "JG"
   },
   {
@@ -241,7 +241,7 @@
    "form": "LWWLL",
    "g": 122,
    "ix": 96,
-   "pg": -3422,
+   "pg": -3434,
    "top_role": "SUP"
   },
   {
@@ -257,7 +257,7 @@
    "form": "WWLLL",
    "g": 93,
    "ix": 96,
-   "pg": -3520,
+   "pg": -3519,
    "top_role": "JG"
   },
   {
@@ -273,7 +273,23 @@
    "form": "LWWWL",
    "g": 86,
    "ix": 95,
-   "pg": -4094,
+   "pg": -4073,
+   "top_role": "MID"
+  },
+  {
+   "scope": "all",
+   "team": "KRX",
+   "lg": "LCK",
+   "W": 11,
+   "L": 25,
+   "sw": 37,
+   "sl": 59,
+   "sd": 4294967274,
+   "wr": 0.3854,
+   "form": "LLLLL",
+   "g": 96,
+   "ix": 93,
+   "pg": -5454,
    "top_role": "MID"
   },
   {
@@ -291,22 +307,6 @@
    "ix": 93,
    "pg": -5926,
    "top_role": "JG"
-  },
-  {
-   "scope": "all",
-   "team": "KRX",
-   "lg": "LCK",
-   "W": 11,
-   "L": 25,
-   "sw": 37,
-   "sl": 59,
-   "sd": 4294967274,
-   "wr": 0.3854,
-   "form": "LLLLL",
-   "g": 96,
-   "ix": 93,
-   "pg": -5453,
-   "top_role": "MID"
   },
   {
    "scope": "all",
@@ -353,7 +353,7 @@
    "form": "WWWLW",
    "g": 88,
    "ix": 87,
-   "pg": -10277,
+   "pg": -10273,
    "top_role": "TOP"
   },
   {
@@ -624,7 +624,7 @@
    "wr": 0.596,
    "form": "WWLWL",
    "g": 99,
-   "ix": 106,
+   "ix": 107,
    "pg": 5081,
    "top_role": "MID"
   },
@@ -641,7 +641,7 @@
    "form": "WLWWL",
    "g": 120,
    "ix": 101,
-   "pg": 1075,
+   "pg": 1070,
    "top_role": "BOT"
   },
   {
@@ -657,7 +657,7 @@
    "form": "LWWLL",
    "g": 102,
    "ix": 97,
-   "pg": -2680,
+   "pg": -2679,
    "top_role": "BOT"
   },
   {
@@ -673,7 +673,7 @@
    "form": "LWWLL",
    "g": 111,
    "ix": 96,
-   "pg": -3276,
+   "pg": -3289,
    "top_role": "SUP"
   },
   {
@@ -705,7 +705,7 @@
    "form": "LWWWL",
    "g": 86,
    "ix": 95,
-   "pg": -4172,
+   "pg": -4153,
    "top_role": "MID"
   },
   {
@@ -721,7 +721,7 @@
    "form": "LLLLL",
    "g": 96,
    "ix": 93,
-   "pg": -5621,
+   "pg": -5623,
    "top_role": "MID"
   },
   {
@@ -737,7 +737,7 @@
    "form": "WWWLW",
    "g": 88,
    "ix": 87,
-   "pg": -10442,
+   "pg": -10438,
    "top_role": "TOP"
   },
   {
@@ -866,7 +866,7 @@
    "g": 14,
    "ix": 92,
    "pg": -7155,
-   "top_role": "BOT"
+   "top_role": "SUP"
   },
   {
    "scope": "lck_s1",
@@ -1024,8 +1024,8 @@
    "wr": 0.359,
    "form": "WLLWL",
    "g": 39,
-   "ix": 90,
-   "pg": -8565,
+   "ix": 89,
+   "pg": -8580,
    "top_role": "SUP"
   },
   {
@@ -1041,7 +1041,7 @@
    "form": "LLLWL",
    "g": 41,
    "ix": 89,
-   "pg": -8616,
+   "pg": -8601,
    "top_role": "BOT"
   },
   {
@@ -1362,7 +1362,7 @@
    "g": 9,
    "ix": 85,
    "pg": -12588,
-   "top_role": "MID"
+   "top_role": "JG"
   },
   {
    "scope": "msi",
@@ -1409,7 +1409,7 @@
    "form": "WLWW",
    "g": 5,
    "ix": 134,
-   "pg": 26458,
+   "pg": 26455,
    "top_role": "TOP"
   },
   {
@@ -1474,7 +1474,7 @@
    "g": 16,
    "ix": 111,
    "pg": 9016,
-   "top_role": "TOP"
+   "top_role": "BOT"
   },
   {
    "scope": "worlds",
@@ -1520,8 +1520,8 @@
    "wr": 0.4615,
    "form": "WLWL",
    "g": 13,
-   "ix": 99,
-   "pg": -619,
+   "ix": 100,
+   "pg": -618,
    "top_role": "TOP"
   },
   {
@@ -1553,7 +1553,7 @@
    "form": "WWLL",
    "g": 8,
    "ix": 96,
-   "pg": -3480,
+   "pg": -3479,
    "top_role": "MID"
   },
   {
@@ -1633,7 +1633,7 @@
    "form": "LWL",
    "g": 11,
    "ix": 89,
-   "pg": -9104,
+   "pg": -9103,
    "top_role": "SUP"
   },
   {
@@ -1681,8 +1681,8 @@
    "form": "LLL",
    "g": 4,
    "ix": 72,
-   "pg": -23021,
-   "top_role": "JG"
+   "pg": -23020,
+   "top_role": "MID"
   },
   {
    "scope": "worlds",
@@ -1697,7 +1697,7 @@
    "form": "LLL",
    "g": 4,
    "ix": 65,
-   "pg": -31356,
+   "pg": -31355,
    "top_role": "BOT"
   }
  ],

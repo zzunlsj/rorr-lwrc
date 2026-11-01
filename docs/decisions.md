@@ -19,7 +19,7 @@
 | 13 | **작업 기준 = 이 git 저장소의 문서**. Notion은 이력 참고용 (2026-10-31 Jun) | `CLAUDE.md` | ☑ |
 | 14 | 공허 유충 명칭 = 원본 표기 **`VoidGrub`** (`horde` 쓰지 않음). 몬스터 이름은 원본 표기 그대로, 미분류 이름은 적재 중단 (2026-10-31 Jun) | `spec/02` §1, `config/lwrc.yaml` | ☑ |
 | 15 | **정본 사양 = `docs/spec/`·`docs/contracts/`·`config/lwrc.yaml`** (rorr-lwrc, LwRC+ v1.0 개정 — git에 나중에 올라온 버전). `specs/lwrc_v1.0.md`(Notion v1.0 초안)와 CLAUDE.md §8은 대체됨 — 리허설 트랙 A/B 재현 기록용으로만 유지 (2026-10-31 Jun) | `docs/spec/*` | ☑ |
-| 16 | `wardType = unknown`(챔피언 고유 설치물, 설치의 38%)은 **시야 피처에서 제외**. L1에는 원본 유지, 제외 건수 리포트 (2026-10-31 Jun) | `spec/04` §3, `spec/06` §2 | ☑ |
+| 16 | `wardType = unknown`(챔피언 고유 설치물, 표본 조사 38% · 전체 데이터 25.1%)은 **시야 피처에서 제외**. L1에는 원본 유지, 제외 건수 리포트 (2026-10-31 Jun) | `spec/04` §3, `spec/06` §2 | ☑ |
 | 17 | 와드 만료 추정 = **공식 패치값 지속시간 표 + 실측 설치→제거 분포로 검증** (2026-10-31 Jun). 표에 **설치 한도 교체 규칙**(`removal_kind = replaced`, Jun 확인) 포함 — `specs/ward_duration_2026-10-31.md` | `spec/04` §3, `config` `ward_rules` | ☑ |
 | 18 | match → 대회·스테이지 매핑 = **Leaguepedia 자동 매핑** (2026-10-31 Jun). 조인 키 `RiotPlatformGameId` = raw `platform_game_id`(정확 일치), R3-4 레전드/라이즈는 `TournamentGroups`. 규칙 `config` `stage_map`, 스크립트 `src/ingest/leaguepedia.py` | `manifest/match_stage_map.csv` | ☑ |
 | 19 | 관여 피처에 **CC·보호(실드+힐)** 추가 → 8피처. 측정은 `stats[]` 누적값 구간 증가분, prior 가중 0 (2026-10-31 Jun) | `spec/04` §1·§3b, `config` | ☑ |
@@ -35,6 +35,7 @@
 | 29 | 배분 회귀 **prior 수축 없음** (`shrinkage_k = 0`). β_초기(점유율 가중)와 β_회귀(원값 가중) 단위 불일치, 표본 충분(fold 간 β 변동 작음). prior 가중은 기준선으로 병행 산출, Step 6 split-half로 정본 판정. 회귀 목표 Swing은 결정 27·28의 잔여 차이로 갱신 (2026-11-01 Jun) | `spec/04` §4.2, `config` `allocation.shrinkage_k` | ☑ |
 | 30 | **상대 데스 감속도 D에 포함** (결정 27 보류분 해소): D 파이 = max(−(ΔV_opp − 시간항_opp − 감쇠항_opp), 0). 상대 Risk는 그대로 두고, 같은 감속을 우리 관여 지분으로 배분. 비교(A 원안 vs B): D 총량 3.2배, 한타 D>0 17% → 44%, 시즌 LwRC+ 포지션 내 상관 0.995 이상, split-half 전반/후반 0.469 → 0.474(동률)·홀/짝 0.724 → 0.696(유의 하락). 권고는 A였으나 스노우볼 개념 일치를 우선해 B 채택. 원안은 `d_pie_excl_death`로 병행 산출 (2026-11-01 Jun) | `spec/03` §3.2, `specs/kill_d_comparison_2026-11-01.md` | ☑ |
 | 31 | **#10 벤치 방향성 = 골드 통제 부분상관**: 포지션 안에서 corr(교전 존재 비율, LwRC/분 \| 실현 골드/분), 승률 통제값·부트스트랩 95% 구간 병기. 이전 지표(골드 순위 − LwRC 순위 상승폭)는 존재 비율이 골드·승률과 묶인 미드·서폿에서 순위 천장 때문에 역방향(−0.10, −0.44)이 나왔다. 변경 후 5개 포지션 모두 + (TOP·JG 유의, 서폿 +0.16 약함). LwRC 산출값 변화 없음 (2026-11-01 Jun) | `spec/07` #10, `specs/bench_direction_analysis_2026-11-01.md` | ☑ |
+| 32 | **시야 = 설치 1 : 제거 2, 시야 총량 유지**: 시야 피처를 하나로 합쳐 설치(교전 창 안 와드 생존 분) × 1 + 교전 구역 제거 수 × 2 (라이엇 시야 점수 실측 비율). 시야 β는 배분 파이 중 시야 몫이 이전과 같은 6.72%가 되도록 고정(보정)하고 나머지 피처만 회귀. 결과: 설치 1분 76 → 53골드, 제거 1개 28 → 106골드, 정글 시야 몫 11.1 → 15.4%, 표본 외 R² 0.6329 → 0.6325, LCK LwRC+ 최대 ±1 (2026-11-01 Jun) | `spec/04` §4.1·§4.3, `config` `allocation.vision_weights`·`vision_pie_share`, `specs/support_vision_check_2026-11-01.md` | ☑ |
 
 ## 2. 이번 버전 범위 밖
 
@@ -74,3 +75,4 @@
 | 2026-11-01 | **버그 수정**: 웹 팀 경기·게임 전적(W·L·sw·sl·form·wr)이 Leaguepedia `winner`(1 = 블루, 2 = 레드)를 경기 team1/team2로 읽어 약 절반이 뒤바뀌어 있었다. 블루/레드로 수정, 회귀 테스트 추가. LwRC·LwRC+ 값은 영향 없음 |
 | 2026-11-01 | **경기·게임 전적 raw 기준** (Jun): 게임 전적 = raw 게임 승패, 경기 전적·최근 5경기 = raw에 게임이 모두 있는 경기만. 일부만 있는 경기(T1 vs DK 8/14, Worlds R4 TES vs BLG 10/29)는 `incomplete_matches`로 분리. 이전의 "누락 게임도 Leaguepedia 공식 결과로 포함"(Step 6) 대체 |
 | 2026-11-01 | #10 서폿·미드 역방향 원인 분석 → 검증 지표를 골드 통제 부분상관으로 변경 (결정 31) |
+| 2026-11-01 | 서폿·시야 기여 점검 (`specs/support_vision_check_2026-11-01.md`) → 시야 피처 합성·총량 유지 (결정 32). 결정 16 unknown 비율에 전체 데이터 기준(25.1%) 병기 |

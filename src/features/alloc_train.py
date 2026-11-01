@@ -5,6 +5,8 @@
   Swing   = 잔여_us − 잔여_opp — 속도형 잔여(ΔV − Risk − 시간항 − 결정적 감쇠, 결정 27·28)
   통제항  = 교전 직전 G 차이 · 게임 시각 · 클러스터 길이 · 참가 인원(presence > 0 선수 수) + 절편
   w_i     = Σ_k β_k · x_ik   (게임의 fold 모델 — G와 같은 경기 단위 fold)
+  시야 β (결정 32): 시야 피처(설치 분 × 1 + 제거 × 2)의 β는 추정하지 않고 고정한다. 배분 파이(C 파이 + D) 중 시야 몫이
+          allocation.vision_pie_share(결정 32 이전 정의의 실측 몫)와 같아지도록 이분 탐색으로 보정하고, 나머지 피처만 NNLS로 맞춘다.
 
 추정: 피처를 표준화하고, 통제항은 β에 제약이 없으므로 미리 투영해 뺀다(Frisch–Waugh). 그 위에서
       [X; √α·I] β ≈ [y; 0], β ≥ 0 을 NNLS로 푼다. α는 경기 단위 내부 CV.
@@ -62,16 +64,24 @@ def load_design() -> pl.DataFrame:
 class NNLSRidge:
     """표준화 피처 + 통제항 투영 + 비음수 리지. coef_는 원래 단위."""
 
-    def fit(self, x: np.ndarray, c: np.ndarray, y: np.ndarray, alpha: float) -> "NNLSRidge":
+    def fit(self, x: np.ndarray, c: np.ndarray, y: np.ndarray, alpha: float, fixed: dict[int, float] | None = None) -> "NNLSRidge":
+        """fixed = {열 번호: 고정 β(원래 단위)} — 그 열은 y에서 먼저 빼고 나머지만 추정 (결정 32: 시야 β 보정)."""
+        fixed = fixed or {}
+        free = [j for j in range(x.shape[1]) if j not in fixed]
+        off = x[:, list(fixed)] @ np.array(list(fixed.values())) if fixed else 0.0
         c1 = np.hstack([c, np.ones((c.shape[0], 1))])
-        self.sd = x.std(axis=0)
-        self.sd[self.sd == 0] = 1.0
-        z = x / self.sd
+        xf = x[:, free]
+        sd = xf.std(axis=0)
+        sd[sd == 0] = 1.0
+        z = xf / sd
         proj = lambda m: m - c1 @ np.linalg.lstsq(c1, m, rcond=None)[0]
-        zr, yr = proj(z), proj(y)
+        zr, yr = proj(z), proj(y - off)
         p = z.shape[1]
         b, _ = nnls(np.vstack([zr, np.sqrt(alpha) * np.eye(p)]), np.concatenate([yr, np.zeros(p)]), maxiter=50 * p)
-        self.coef_ = b / self.sd
+        self.coef_ = np.zeros(x.shape[1])
+        self.coef_[free] = b / sd
+        for j, v in fixed.items():
+            self.coef_[j] = v
         self.gamma_ = np.linalg.lstsq(c1, y - x @ self.coef_, rcond=None)[0]
         return self
 
@@ -83,12 +93,12 @@ def r2(y, yhat) -> float:
     return float(1 - np.sum((y - yhat) ** 2) / np.sum((y - y.mean()) ** 2))
 
 
-def choose_alpha(x, c, y, groups, k, alphas) -> float:
+def choose_alpha(x, c, y, groups, k, alphas, fixed=None) -> float:
     scores = {}
     for a in alphas:
         err = []
         for tr, te in GroupKFold(n_splits=k).split(x, y, groups):
-            m = NNLSRidge().fit(x[tr], c[tr], y[tr], a)
+            m = NNLSRidge().fit(x[tr], c[tr], y[tr], a, fixed)
             err.append(np.mean((y[te] - m.predict(x[te], c[te])) ** 2))
         scores[a] = float(np.mean(err))
     return min(scores, key=scores.get)
@@ -105,6 +115,39 @@ def prior_weights(feat: pl.DataFrame, prior: dict[str, float]) -> pl.Series:
                     .otherwise(pl.col("w")).alias("w_prior"))["w_prior"]
 
 
+def vision_pie_share(models: dict, feat: pl.DataFrame, xf: np.ndarray, gf: np.ndarray, vi: int) -> float:
+    """fold 모델로 지분을 만들고 클러스터 파이(C 파이 + D)를 나눴을 때 시야 피처 몫의 비율."""
+    w, wv = np.zeros(feat.height), np.zeros(feat.height)
+    for f, m in models.items():
+        sel = gf == f
+        w[sel] = xf[sel] @ m.coef_
+        wv[sel] = xf[sel, vi] * m.coef_[vi]
+    x = (feat.select("game_id", "k", "team_id", "pie").with_columns(pl.Series("w", w), pl.Series("wv", wv))
+         .with_columns(pl.col("w").sum().over("game_id", "k", "team_id").alias("sw")))
+    x = x.with_columns(pl.when(pl.col("sw") > 0).then(pl.col("pie") / pl.col("sw")).otherwise(0.0).alias("per_w"))
+    alloc = (x["per_w"] * x["w"]).sum()
+    return float((x["per_w"] * x["wv"]).sum() / alloc) if alloc > 0 else 0.0
+
+
+def calibrate_vision_beta(x, c, y, groups, fold, k, alphas, feat, xf, gf, vi, target, tol=1e-4) -> tuple[float, dict, float, dict]:
+    """시야 β를 고정값으로 두고 나머지를 맞췄을 때 시야 몫 = target이 되는 β를 이분 탐색 (결정 32: 시야 총량 유지)."""
+    fold_alpha = {f: choose_alpha(x[fold != f], c[fold != f], y[fold != f], groups[fold != f], k, alphas) for f in range(k)}
+
+    def models_at(bv):
+        return {f: NNLSRidge().fit(x[fold != f], c[fold != f], y[fold != f], fold_alpha[f], {vi: bv}) for f in range(k)}
+
+    lo, hi = 0.0, 1.0
+    while vision_pie_share(models_at(hi), feat, xf, gf, vi) < target:
+        hi *= 2
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        share = vision_pie_share(models_at(mid), feat, xf, gf, vi)
+        if abs(share - target) < tol:
+            break
+        lo, hi = (mid, hi) if share < target else (lo, mid)
+    return mid, models_at(mid), share, fold_alpha
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=0)
@@ -118,17 +161,28 @@ def main() -> None:
     x, c, y = d.select(FEATURES).to_numpy(), d.select(CONTROLS).to_numpy(), d["swing"].to_numpy()
     groups, fold = d["match_id"].to_numpy(), d["fold"].to_numpy()
 
-    alpha_all = choose_alpha(x, c, y, groups, k, acfg["ridge_alphas"])
-    full = NNLSRidge().fit(x, c, y, alpha_all)
+    # 선수 × 클러스터 피처와 클러스터 파이 (지분 산출·시야 β 보정용)
+    feat = pl.read_parquet(FEAT_DIR / "**" / "*.parquet", hive_partitioning=True).sort("game_id", "k", "participant_id")
+    pies = pl.read_parquet(TL / "clusters" / "**" / "*.parquet", hive_partitioning=False).select(
+        "game_id", "k", pl.col("side").alias("team_id"), (pl.col("c_pie") + pl.col("d_pie")).alias("pie"))
+    feat = feat.join(pies, on=["game_id", "k", "team_id"], how="left").with_columns(pl.col("pie").fill_null(0.0))
+    fold_of_game = dict(d.select("game_id", "fold").unique().iter_rows())
+    xf = feat.select(FEATURES).to_numpy()
+    gf = np.array([fold_of_game[g] for g in feat["game_id"].to_list()])
+
+    # 시야 β: 설치·제거 비율은 vision_weights로 고정, 시야 총량(배분 파이 중 시야 몫)은 vision_pie_share로 고정 (결정 32)
+    vi = FEATURES.index("vision")
+    beta_v, models, share_v, fold_alpha = calibrate_vision_beta(x, c, y, groups, fold, k, acfg["ridge_alphas"], feat, xf, gf, vi,
+                                                    acfg["vision_pie_share"])
+    fixed = {vi: beta_v}
+    alpha_all = choose_alpha(x, c, y, groups, k, acfg["ridge_alphas"], fixed)
+    full = NNLSRidge().fit(x, c, y, alpha_all, fixed)
     rows = [{"fold": "all", "alpha": alpha_all, **dict(zip(FEATURES, full.coef_))}]
     oos = np.empty_like(y)
-    models = {}
     for f in range(k):
         tr, te = fold != f, fold == f
-        a = choose_alpha(x[tr], c[tr], y[tr], groups[tr], k, acfg["ridge_alphas"])
-        models[f] = NNLSRidge().fit(x[tr], c[tr], y[tr], a)
         oos[te] = models[f].predict(x[te], c[te])
-        rows.append({"fold": str(f), "alpha": a, **dict(zip(FEATURES, models[f].coef_)),
+        rows.append({"fold": str(f), "alpha": fold_alpha[f], **dict(zip(FEATURES, models[f].coef_)),
                      "oos_r2": r2(y[te], oos[te])})
     beta = pl.DataFrame(rows)
 
@@ -146,7 +200,7 @@ def main() -> None:
     boot = []
     for _ in range(acfg["bootstrap_reps"]):
         idx = np.concatenate([idx_of[m] for m in rng.choice(matches, matches.size, replace=True)])
-        boot.append(NNLSRidge().fit(x[idx], c[idx], y[idx], alpha_all).coef_)
+        boot.append(NNLSRidge().fit(x[idx], c[idx], y[idx], alpha_all, fixed).coef_)
     boot = np.array(boot)
     # 비율만 의미가 있으므로 dmg 기준 상대 β도 함께
     ci = [{"feature": f, "beta": float(full.coef_[i]), "lo": float(np.percentile(boot[:, i], 2.5)),
@@ -156,15 +210,11 @@ def main() -> None:
            "sd_x_player": None} for i, f in enumerate(FEATURES)]
 
     # 선수 가중치 (회귀 = 게임의 fold β, prior = 팀 점유율)
-    feat = pl.read_parquet(FEAT_DIR / "**" / "*.parquet", hive_partitioning=True).sort("game_id", "k", "participant_id")
     sd_player = feat.select(FEATURES).std()
     for r in ci:
         r["sd_x_player"] = float(sd_player[r["feature"]][0])
         r["beta_x_sd"] = r["beta"] * r["sd_x_player"]       # 선수 피처 1 표준편차당 지분 — 피처 간 비교용
-    fold_of_game = dict(d.select("game_id", "fold").unique().iter_rows())
     bmat = {f: m.coef_ for f, m in models.items()}
-    xf = feat.select(FEATURES).to_numpy()
-    gf = np.array([fold_of_game[g] for g in feat["game_id"].to_list()])
     w_reg = np.zeros(feat.height)
     for f, b in bmat.items():
         w_reg[gf == f] = xf[gf == f] @ b
@@ -184,6 +234,8 @@ def main() -> None:
         "beta_ci": ci, "gamma_all": dict(zip(CONTROLS + ["intercept"], map(float, full.gamma_))),
         "team_sum_w_zero": {"regression": float((team_zero["r"] == 0).mean()), "prior": float((team_zero["p"] == 0).mean())},
         "shrinkage_k": acfg["shrinkage_k"], "bootstrap_reps": acfg["bootstrap_reps"],
+        "vision_calibration": {"vision_weights": acfg["vision_weights"], "target_pie_share": acfg["vision_pie_share"],
+                               "achieved_pie_share": share_v, "beta_vision_fixed": beta_v},
     }
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     beta.write_parquet(MODEL_DIR / "beta.parquet")

@@ -139,3 +139,12 @@
 | `metrics.game_lwrc` | 8.3초, 항등식 미통과 0, 최대 잔차 2.9e-11 |
 | `metrics.season` · `metrics.gold` · `report.build_site` | 1.6초 · 3.0초 · 0.1초. 정본 가중 = 회귀 (split-half 0.474 vs prior 0.466) |
 | `report.compare_kill_d` | A·B 비교 수치 재현 (D 총량 467만 → 1,493만) |
+
+## 결정 32 반영 — 시야 설치 1 : 제거 2, 시야 총량 유지 (2026-11-01)
+
+| 항목 | 값 |
+|---|---|
+| `features.alloc_features` | 111,180행, 5초 (시야 합성 피처 추가) |
+| `features.alloc_train` | 시야 β 보정(이분 탐색) 포함 약 1초 — β = 53, 시야 몫 6.715% (목표 6.72%), OOS R² 0.6325 |
+| `metrics.game_lwrc` · `season` · `gold` · `build_site` | 8초 · 1초 · 2초 · 0.1초, 항등식 미통과 0 |
+| 점검 스크립트 | `report.vision_score_check` 91초 (raw 678게임 읽기, 6 프로세스), `report.vision_value_check` raw 추출 포함 약 2분, `report.fight_ward_check` 약 10초 |

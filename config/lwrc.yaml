@@ -48,7 +48,7 @@ buffs:
 
 allocation:
   method: both                   # both = prior와 regression 모두 산출, 신뢰도로 정본 채택
-  prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision_provided: 0.0, vision_denied: 0.0, cc: 0.0, protect: 0.0}
+  prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision: 0.0, cc: 0.0, protect: 0.0}
   dmg_source: frame_delta        # 프레임 누적 챔피언 피해 증가분
   estimator: nnls_ridge
   ridge_alphas: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]   # 표준화 피처 기준, 경기 단위 내부 CV로 선택
@@ -58,6 +58,12 @@ allocation:
   presence_radius: 2300
   vision_radius: 3300
   vision_pre_window_sec: 30
+  # 시야 피처 = 설치(교전 창 안 와드 생존 분) × place_per_min + 교전 구역 제거 수 × clear (결정 32).
+  # 라이엇 시야 점수 실측: 설치 ≈ 수명 1분당 1점, 제거 ≈ 1.5~2.2점 (specs/support_vision_check_2026-11-01.md §12)
+  vision_weights: {place_per_min: 1.0, clear: 2.0}
+  # 시야 총량 유지 (결정 32): 배분 파이(C 파이 + D) 중 시야 몫을 이전 정의(설치 초·제거 수 각각 회귀 β, 결정 30 시점)의 실측값으로 고정.
+  # 시야 β는 이 몫이 되도록 보정되고 나머지 피처만 회귀로 추정 (specs/support_vision_check_2026-11-01.md §13)
+  vision_pie_share: 0.0672
   vision_ward_types: [sight, yellowTrinket, blueTrinket, control]   # unknown 제외 (결정 16)
   ward_rules:                     # 와드 만료 추정 (결정 17, 근거 specs/ward_duration_2026-10-31.md). 패치 16.15 기준
     patch: "16.15"

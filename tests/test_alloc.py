@@ -51,3 +51,16 @@ def test_weights_are_nonnegative_and_cover_every_player_cluster():
     w = pl.read_parquet(W / "**" / "*.parquet", hive_partitioning=False)
     assert (w["w_reg"] >= 0).all() and (w["w_prior"] >= 0).all()
     assert w.group_by("game_id", "k").len()["len"].unique().to_list() == [10]
+
+
+def test_nnls_ridge_keeps_fixed_coefficient():
+    """결정 32: 시야 β를 고정하면 그 열은 추정하지 않고, 나머지는 고정분을 뺀 y로 맞춘다."""
+    import numpy as np
+    from features.alloc_train import NNLSRidge
+    rng = np.random.default_rng(0)
+    x = rng.normal(size=(400, 3))
+    c = rng.normal(size=(400, 1))
+    y = 2.0 * x[:, 0] + 5.0 * x[:, 1] + 1.0 * x[:, 2] + rng.normal(scale=0.1, size=400)
+    m = NNLSRidge().fit(x, c, y, alpha=1e-6, fixed={1: 3.0})
+    assert m.coef_[1] == 3.0
+    assert abs(m.coef_[0] - 2.0) < 0.3 and abs(m.coef_[2] - 1.0) < 0.3
