@@ -68,3 +68,15 @@ def test_match_results_count_only_matches_complete_in_raw():
     assert (r["B"]["W"], r["B"]["L"], r["B"]["form"]) == (0, 1, "L")
     assert (r["A"]["sw"], r["A"]["sl"]) == (3, 1)          # 게임 전적은 미완 경기의 raw 게임도 센다
     assert [m["lp_match_id"] for m in inc] == ["L2"] and inc[0]["raw_games"] == 2
+
+
+def test_partial_corr_removes_shared_driver():
+    """#10 (결정 31): 골드가 존재·LwRC를 함께 끌어올리는 경우, 골드를 통제하면 그 몫이 빠진다."""
+    import numpy as np
+    from metrics.season import partial_corr
+    rng = np.random.default_rng(1)
+    gold = rng.normal(size=500)
+    presence = gold + rng.normal(scale=0.5, size=500)                    # 존재 = 골드에 묶인 대리 지표
+    lwrc = gold + rng.normal(scale=0.5, size=500)                        # 존재와 무관, 골드만 공유
+    assert partial_corr(presence, lwrc, []) > 0.7
+    assert abs(partial_corr(presence, lwrc, [gold])) < 0.1

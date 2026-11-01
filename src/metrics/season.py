@@ -101,22 +101,48 @@ def split_half_diff_ci(p: pl.DataFrame, sigma: float, min_half: int, reps: int, 
             "p_regression_higher": float((np.array(diffs) > 0).mean()), "n_players": int(n)}
 
 
-def bench_direction(p: pl.DataFrame, min_games: int) -> dict:
-    """#10: 포지션 안에서 (실현 골드 순위 − LwRC 순위) 상승폭과 교전 존재 비율의 상관. 양수면 로밍형이 오른다."""
+def _resid(y: np.ndarray, ctrl: list[np.ndarray]) -> np.ndarray:
+    x = np.column_stack([np.ones(len(y)), *ctrl])
+    return y - x @ np.linalg.lstsq(x, y, rcond=None)[0]
+
+
+def partial_corr(a: np.ndarray, b: np.ndarray, ctrl: list[np.ndarray]) -> float:
+    """ctrl로 설명되는 부분을 a·b에서 각각 뺀(최소제곱 잔차) 뒤의 상관. ctrl이 비면 단순 상관."""
+    return float(np.corrcoef(_resid(a, ctrl), _resid(b, ctrl))[0, 1]) if ctrl else float(np.corrcoef(a, b)[0, 1])
+
+
+def bench_direction(p: pl.DataFrame, min_games: int, reps: int = 2000, seed: int = 0) -> dict:
+    """#10 (결정 31): 포지션 안에서 corr(교전 존재 비율, LwRC/분 | 실현 골드/분) — 골드 통제 부분상관. 양수면 로밍형이 오른다.
+
+    승률까지 통제한 값, 선수 재표집 부트스트랩 95% 구간, 이전 지표(골드 순위 − LwRC 순위 상승폭과의 상관)를 함께 낸다.
+    이전 지표는 존재 비율이 골드·승률과 묶인 포지션(미드·서폿)에서 순위 천장 때문에 역방향이 나왔다 (specs/bench_direction_analysis_2026-11-01.md).
+    """
     feat = pl.read_parquet(FEAT_DIR / "**" / "*.parquet", hive_partitioning=False).select("game_id", "participant_id", "presence")
     pres = p.select("game_id", "participant_id", "puuid").join(feat, on=["game_id", "participant_id"]).group_by("puuid").agg(
         pl.col("presence").mean())
     s = (p.group_by("puuid").agg(pl.col("role").mode().first(), pl.len().alias("g"),
                                  (pl.col("lwrc").sum() / pl.col("play_min").sum()).alias("lwrc_r"),
-                                 (pl.col("c_gold").sum() / pl.col("play_min").sum()).alias("gold_r"))
+                                 (pl.col("c_gold").sum() / pl.col("play_min").sum()).alias("gold_r"),
+                                 (pl.col("team_id") == pl.col("winning_team")).mean().alias("wr"))
          .filter(pl.col("g") >= min_games).join(pres, on="puuid")
          .with_columns(pl.col("lwrc_r").rank(descending=True).over("role").alias("rk_l"),
                        pl.col("gold_r").rank(descending=True).over("role").alias("rk_g"))
          .with_columns((pl.col("rk_g") - pl.col("rk_l")).alias("rank_gain")))
-    out = {}
+    rng, out = np.random.default_rng(seed), {}
     for role, d in sorted(s.partition_by("role", as_dict=True).items()):
-        out[role[0]] = {"n": d.height, "corr_presence_rank_gain": float(np.corrcoef(d["presence"], d["rank_gain"])[0, 1]),
-                        "corr_lwrc_gold_rate": float(np.corrcoef(d["lwrc_r"], d["gold_r"])[0, 1])}
+        pr, lw, gd, wr = (d[c].to_numpy().astype(float) for c in ("presence", "lwrc_r", "gold_r", "wr"))
+        n, boot = d.height, {"gold": [], "gold_wr": []}
+        for _ in range(reps):
+            i = rng.integers(0, n, n)
+            boot["gold"].append(partial_corr(pr[i], lw[i], [gd[i]]))
+            boot["gold_wr"].append(partial_corr(pr[i], lw[i], [gd[i], wr[i]]))
+        out[role[0]] = {"n": n,
+                        "partial_presence_lwrc_given_gold": partial_corr(pr, lw, [gd]),
+                        "ci95_given_gold": [float(x) for x in np.nanpercentile(boot["gold"], [2.5, 97.5])],
+                        "partial_presence_lwrc_given_gold_wr": partial_corr(pr, lw, [gd, wr]),
+                        "ci95_given_gold_wr": [float(x) for x in np.nanpercentile(boot["gold_wr"], [2.5, 97.5])],
+                        "corr_lwrc_gold_rate": float(np.corrcoef(lw, gd)[0, 1]),
+                        "legacy_corr_presence_rank_gain": float(np.corrcoef(pr, d["rank_gain"].to_numpy())[0, 1])}
     return out
 
 

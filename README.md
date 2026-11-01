@@ -66,7 +66,7 @@ git add site/data && git commit -m "데이터 갱신" && git push   # Pages 자�
 | #6 D/C | 팀·게임 중앙값 0.43 (데스 감속 포함, 결정 30 · 원안 0.127 · 기존 ΔG 파이 0.003) |
 | 배분 회귀 | 표본 외 R² 0.633 (통제항만 0.086) |
 | #9 split-half | 회귀 0.474 vs prior 가중 0.466 → 회귀 채택 (차이는 유의하지 않음, 결정 30 반영 후) |
-| #10 벤치 방향성 | TOP·JG·BOT 기대 방향, MID·SUP 역방향 — 분석 보류 |
+| #10 벤치 방향성 | 존재 비율 ~ LwRC/분 골드 통제 부분상관 (결정 31): TOP +0.58 · JG +0.60 · MID +0.36 · BOT +0.28 · SUP +0.16 — 5개 포지션 모두 기대 방향, TOP·JG 유의, 서폿은 약함 |
 | #11 게임 길이 상관 | −0.001 → 분모 층화 불필요 |
 
 ## 4. Notion v1.0 개정 대비 바뀐 점
@@ -88,7 +88,7 @@ git add site/data && git commit -m "데이터 갱신" && git push   # Pages 자�
 
 ## 5. 남은 항목
 
-1. #10 서폿·미드 역방향 원인 분석
+1. 서폿 기여(CC·시야·보호)가 배분에서 얼마나 인정되는지 점검 (#10 서폿 신호 약함 — `specs/bench_direction_analysis_2026-11-01.md`)
 2. Worlds 잔여분 + 누락 1게임(T1 vs DK 8/14 경기의 게임 3) 수령 후 재실행 (11/15 이후)
 3. 추가 지표 범위 (PCI+, MapPressure, WPA — CLAUDE.md §9-4)
 4. 블로그·웹 문구 수정 (`docs/decisions.md` §3, 저장소 밖)

@@ -1,6 +1,6 @@
 {
  "version": "lwrc_v1.0-rev",
- "generated_at": "2026-11-01T07:37:57+00:00",
+ "generated_at": "2026-11-01T07:58:24+00:00",
  "allocation_method": "regression",
  "g_model_version": "lwrc_v1.0-rev+ridge-crossfit5+snapshot-8eb212cb109c4bbe",
  "players": [
@@ -7158,7 +7158,7 @@
    "scope": "lck_s2",
    "player_id": "4f447154-fd89-524c-8df8-2f805f17af67",
    "name": "Taeyoon",
-   "team": "NS",
+   "team": "BFX",
    "lg": "LCK",
    "role": "BOT",
    "g": 40,
@@ -7172,7 +7172,7 @@
    "risk": -113638.0,
    "role_rank": 7,
    "role_n": 10,
-   "team_share": 21.2,
+   "team_share": 26.4,
    "c_gold": 593006.0,
    "c_pie": 197790.4
   },
@@ -7216,7 +7216,7 @@
    "risk": -124705.5,
    "role_rank": 9,
    "role_n": 10,
-   "team_share": 17.7,
+   "team_share": 22.5,
    "c_gold": 543548.0,
    "c_pie": 163670.9
   },
@@ -7282,7 +7282,7 @@
    "risk": -8535.6,
    "role_rank": null,
    "role_n": null,
-   "team_share": 1.0,
+   "team_share": 0.7,
    "c_gold": 23684.0,
    "c_pie": 4360.3
   },
@@ -7502,7 +7502,7 @@
    "risk": -136254.4,
    "role_rank": 8,
    "role_n": 10,
-   "team_share": 26.4,
+   "team_share": 19.4,
    "c_gold": 444063.0,
    "c_pie": 176102.4
   },
@@ -7524,7 +7524,7 @@
    "risk": -155585.1,
    "role_rank": 9,
    "role_n": 10,
-   "team_share": 16.0,
+   "team_share": 20.3,
    "c_gold": 465462.0,
    "c_pie": 183669.1
   },
@@ -7744,7 +7744,7 @@
    "risk": -32966.0,
    "role_rank": 8,
    "role_n": 12,
-   "team_share": 7.2,
+   "team_share": 5.3,
    "c_gold": 120015.0,
    "c_pie": 47049.3
   },
@@ -7766,7 +7766,7 @@
    "risk": -130435.7,
    "role_rank": 9,
    "role_n": 12,
-   "team_share": 17.2,
+   "team_share": 21.8,
    "c_gold": 505517.0,
    "c_pie": 172534.3
   },
@@ -7810,7 +7810,7 @@
    "risk": -110097.8,
    "role_rank": 11,
    "role_n": 12,
-   "team_share": 18.5,
+   "team_share": 13.6,
    "c_gold": 346296.0,
    "c_pie": 109869.9
   },
@@ -7986,7 +7986,7 @@
    "risk": -76273.2,
    "role_rank": 6,
    "role_n": 11,
-   "team_share": 22.4,
+   "team_share": 16.5,
    "c_gold": 298357.0,
    "c_pie": 179147.5
   },
@@ -8030,7 +8030,7 @@
    "risk": -99535.3,
    "role_rank": 8,
    "role_n": 11,
-   "team_share": 10.9,
+   "team_share": 13.8,
    "c_gold": 265561.0,
    "c_pie": 159425.8
   },
@@ -8096,7 +8096,7 @@
    "risk": -10871.0,
    "role_rank": null,
    "role_n": null,
-   "team_share": 2.1,
+   "team_share": 2.6,
    "c_gold": 52774.0,
    "c_pie": 22051.8
   },
@@ -8316,7 +8316,7 @@
    "risk": -124895.3,
    "role_rank": 8,
    "role_n": 10,
-   "team_share": 24.5,
+   "team_share": 18.1,
    "c_gold": 453420.0,
    "c_pie": 138619.2
   },
@@ -8338,7 +8338,7 @@
    "risk": -144166.9,
    "role_rank": 9,
    "role_n": 10,
-   "team_share": 14.9,
+   "team_share": 19.0,
    "c_gold": 471212.0,
    "c_pie": 151868.9
   },
