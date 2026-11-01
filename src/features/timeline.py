@@ -126,15 +126,11 @@ def decay_contrib(x: pl.DataFrame, beta: dict[str, float], feats: dict[str, list
     return np.concatenate([[0.0], np.cumsum(step)])
 
 
-def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]]) -> dict[str, pl.DataFrame]:
-    gid = meta["game_id"]
-    ccfg = cfg["cluster"]
-    g = pl.read_parquet(G_DIR / f"tournament={meta['tournament']}" / f"{gid}.parquet")
-    state = pl.read_parquet(L2 / "state" / f"tournament={meta['tournament']}" / "**" / f"{gid}.parquet", hive_partitioning=False)
+def learned_engine(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], state: pl.DataFrame,
+                   kills: pl.DataFrame, fp: pl.DataFrame):
+    """학습 G (Step 2 크로스피팅 fold 모델): 틱, G·시간항·감쇠 누적(side별), 데스별 Risk."""
+    g = pl.read_parquet(G_DIR / f"tournament={meta['tournament']}" / f"{meta['game_id']}.parquet")
     beta = coefs[str(g["fold"][0])]
-    kills = _read(L1, "kills", gid)
-    fp = _read(L1, "frames_player", gid).sort("game_time_ms", "participant_id")
-
     G, TT, DEC = {}, {}, {}
     for s in SIDES:
         gs = g.filter(pl.col("side") == s).sort("t_ms")
@@ -143,8 +139,19 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]]) ->
         G[s][-1] = gs["y"][-1]                       # G(END) := y(END)
         assert gs["is_end"][-1], "마지막 틱이 종료 틱이 아님"
         TT[s] = gs["G_time_term"].to_numpy()
-        DEC[s] = decay_contrib(state.filter(pl.col("side") == s).sort("t_ms"), beta, ccfg["decay_features"])
+        DEC[s] = decay_contrib(state.filter(pl.col("side") == s).sort("t_ms"), beta, cfg["cluster"]["decay_features"])
         assert DEC[s].size == t.size, "상태 테이블과 G 틱 수 불일치"
+    return t, G, TT, DEC, death_risk(kills, fp, beta)
+
+
+def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], engine=learned_engine) -> dict[str, pl.DataFrame]:
+    """engine을 바꾸면 같은 분할·귀속을 다른 G(비교 기준선 prior G 등)로 산출한다."""
+    gid = meta["game_id"]
+    ccfg = cfg["cluster"]
+    state = pl.read_parquet(L2 / "state" / f"tournament={meta['tournament']}" / "**" / f"{gid}.parquet", hive_partitioning=False)
+    kills = _read(L1, "kills", gid)
+    fp = _read(L1, "frames_player", gid).sort("game_time_ms", "participant_id")
+    t, G, TT, DEC, deaths = engine(meta, cfg, coefs, state, kills, fp)
     n = t.size
 
     seeds = seeds_of(kills, _read(L1, "buildings", gid), _read(L1, "monsters", gid), ccfg["seed_monsters"])
@@ -154,7 +161,6 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]]) ->
     seeds = seeds.with_columns(pl.Series("k", k, dtype=pl.Int64))
     cl = tick_spans(t, spans)
 
-    deaths = death_risk(kills, fp, beta)
     ks = seeds.filter(pl.col("kind") == "kill")
     kill_k = dict(zip(ks["seq"].to_list(), ks["k"].to_list()))
     deaths = deaths.with_columns(pl.col("kill_seq").replace_strict(kill_k, default=None, return_dtype=pl.Int64).alias("k"))

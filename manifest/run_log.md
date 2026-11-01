@@ -112,3 +112,11 @@
 | `features.alloc_features --workers 6` | 선수 × 클러스터 111,180행, **5초** |
 | `features.alloc_train` | 클러스터 11,118개, 크로스피팅 + 부트스트랩 200회 포함 **1초** (실행 시간 출력 기준) |
 | 검증 | 표본 외 R² 0.633 (통제항만 0.086), fold별 0.608~0.647 |
+
+## Step 5 배분 · 항등식 · 게임별 LwRC (2026-11-01)
+
+| 항목 | 실측 |
+|---|---|
+| `metrics.game_lwrc --workers 6` | 678게임 × 변형 4개(main · prior_w · legacy · prior_g), prior G 타임라인 재산출 포함 **7초**, 산출 16MB (`data/l3/`) |
+| 항등식 | 전 변형 최대 잔차 2.9e-11 (ε = 1.0), 미통과 0게임 |
+| r̄ (prior G용 팀 분당 평균 수입) | `data/l3/step5_run.json` |
