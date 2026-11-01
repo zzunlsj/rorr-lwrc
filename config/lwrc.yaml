@@ -51,6 +51,9 @@ allocation:
   prior_weights: {dmg: 1.0, assist: 0.5, absorb: 0.3, presence: 0.2, vision_provided: 0.0, vision_denied: 0.0, cc: 0.0, protect: 0.0}
   dmg_source: frame_delta        # 프레임 누적 챔피언 피해 증가분
   estimator: nnls_ridge
+  ridge_alphas: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]   # 표준화 피처 기준, 경기 단위 내부 CV로 선택
+  bootstrap_reps: 200            # 경기 단위 재표집 (β 신뢰구간)
+  # 회귀 목표 Swing = 잔여_us − 잔여_opp (속도형·감쇠 제외 잔여, 결정 27·28). 통제항: 직전 G 차이·시각·길이·참가 인원
   position_specific_beta: false
   presence_radius: 2300
   vision_radius: 3300
@@ -68,7 +71,7 @@ allocation:
     match_xz: 50                  # 설치↔제거 매칭 위치 허용 오차 (연결 키 없음, spec/06 §2)
   cc_stat: TOTAL_TIME_CROWD_CONTROL_DEALT_TO_CHAMPIONS                    # 결정 19
   protect_stats: [TOTAL_DAMAGE_SHIELDED_ON_TEAMMATES, TOTAL_HEAL_ON_TEAMMATES]
-  shrinkage_k: null              # prior 수축의 k — Step 4에서 결정 후 기록
+  shrinkage_k: 0                 # prior 수축 없음 — 표본 충분(클러스터 약 8,900), prior는 기준선으로 따로 산출 (결정 29)
 
 season:
   year: 2026
