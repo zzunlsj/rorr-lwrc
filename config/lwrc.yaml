@@ -89,6 +89,15 @@ season:
   winsorize_sigma: 3
   length_corr_threshold: 0.2
   length_buckets_min: [25, 35]   # 층화 시: ≤25 / 25~35 / 35+
+  # 웹 lg 필드 — 팀의 2026 지역 리그 (Leaguepedia Tournaments.League → 약칭). src/ingest/team_leagues.py
+  league_codes:
+    LoL Champions Korea: LCK
+    Tencent LoL Pro League: LPL
+    LoL EMEA Championship: LEC
+    League of Legends Championship Series: LCS
+    Circuit Brazilian League of Legends: CBLOL
+    League of Legends Championship Pacific: LCP
+  role_codes: {Top: TOP, Jungle: JG, Middle: MID, Bottom: BOT, Support: SUP}
 
 stage_map:                       # match → tournament/stage (결정 18). 출처 Leaguepedia, 조인 키 platform_game_id = RiotPlatformGameId
   exclude_overview_contains: ["Classic Showmatch"]

@@ -120,3 +120,12 @@
 | `metrics.game_lwrc --workers 6` | 678게임 × 변형 4개(main · prior_w · legacy · prior_g), prior G 타임라인 재산출 포함 **7초**, 산출 16MB (`data/l3/`) |
 | 항등식 | 전 변형 최대 잔차 2.9e-11 (ε = 1.0), 미통과 0게임 |
 | r̄ (prior G용 팀 분당 평균 수입) | `data/l3/step5_run.json` |
+
+## Step 6 scope 집계 · LwRC+ · 웹 출력 (2026-11-01)
+
+| 항목 | 실측 |
+|---|---|
+| `ingest.team_leagues` | Leaguepedia 2026 대회 참가 → 팀 28개 지역 리그 (LCK 10, LPL 5, LCP 4, LEC 3, LCS 3, CBLOL 3), `manifest/team_leagues_2026.csv` |
+| `metrics.season` | scope 8개 × 변형 4개, split-half 부트스트랩 200회 포함 **1초** |
+| 출력 | `outputs/web/players.json` 586행 (244KB), `teams.json` 106행 (24KB), `outputs/validation_report.json`, `data/l3/season_player_lwrc_plus.parquet` — 스키마 검증 통과 |
+| 정본 가중 | 회귀 (split-half 0.469 vs prior 0.461) |
