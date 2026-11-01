@@ -26,6 +26,8 @@
 | 20 | LCK Split 구분: **s1 = LCK Cup / s2 = Rounds 1-2 + Road to MSI / s3 = Rounds 3-4 + Play-In + Playoffs** (2026-10-31 Jun) | `contracts/output-web.md` §1, `config` `season.scope_tournaments` | ☑ |
 | 21 | Raw 수령 범위 = **대회 전체** (LCK 팀 미출전 경기 포함). 월별 tar 원본(`session.json` + `events-*.ndjson.gz`)을 바이트 그대로 L0 보관 (2026-10-31 Jun) | `CLAUDE.md` §9-5, `src/ingest/ingest_tar.py` | ☑ |
 | 22 | 메타 결측 대체: raw 우선, 없으면 Kazel `session.json`. **승자**는 `game_end`가 없으면 Kazel `winning_side`를 쓰되 Leaguepedia와 일치할 때만 (어긋나면 제외), 종료 시각 = 마지막 틱. **패치**는 `game_info`가 없으면 Kazel `patch`. L1 `games`에 `winner_source`·`patch_source` 기록 (2026-10-31 Jun) | `spec/06` §1, `normalize/rules.py` | ☑ |
+| 23 | G 부호 검증(spec/07 #1)의 타워 규칙은 **외곽·2차 타워에만** 적용. 억제기 타워 β는 같은 골드·시간 조건에서 음수(−759, fold 전부)가 나오며, 골드 지표 특성(본진이 열리면 수비 쪽 슈퍼 미니언 수입)으로 보고 **현재 모델(리지, 제약 없음)을 채택** (2026-11-01 Jun) | `spec/07` #1, `config` `g.sign_rules`, `specs/step2_g_report_2026-10-31.md` | ☑ |
+| 24 | 패치 처리 = 정본 `spec/01` §1.3대로 **패치·대회 더미 피처**, 분리 학습 없음 (CLAUDE.md §9-3 해소) (2026-11-01 Jun) | `spec/01` §1.3 | ☑ |
 
 ## 2. 이번 버전 범위 밖
 
@@ -55,3 +57,4 @@
 | 2026-10-31 | 와드 지속시간 표·교체 규칙 (결정 17), Leaguepedia 매핑 구현·검증 (결정 18), LCK Split 구분 (결정 20) |
 | 2026-10-31 | 월별 tar 수령(678게임). Raw 수령 범위 = 대회 전체 (결정 21). tar 적재 스크립트·형식 공용 raw 리더 추가 |
 | 2026-10-31 | Step 0 전체 리포트(678게임). 승자·패치 결측 대체 (결정 22). Worlds 잔여분·누락 1게임은 11/15 결승 후 일괄 수령 |
+| 2026-11-01 | Step 2 G 학습: 억제기 타워 부호 규칙 제외 (결정 23), 패치 더미 확정 (결정 24). Step 0 리포트 경기 수 정정 263 → 255 |

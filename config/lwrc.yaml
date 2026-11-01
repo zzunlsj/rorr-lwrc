@@ -7,6 +7,17 @@ g:
   model: linear_ridge
   crossfit_k: 5                  # 경기 단위
   holdout_tail_fraction: 0.25    # 시간 홀드아웃 검증용
+  ridge_alphas: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]   # 경기 단위 내부 CV로 선택
+  sign_rules:                    # spec/07 검증 1 — 우리 관점 피처의 기대 부호. 어긋나면 모델 반려
+    gold_us: +1
+    alive_us: +1
+    respawn_sum_us: -1
+    dragon_stack_us: +1
+    baron_buff_us: +1
+    tower_outer_taken: +1
+    tower_inner_taken: +1        # 억제기 타워(tower_base_taken)는 규칙에서 뺌 — 결정 23
+  price_examples:                # 단가표의 데스 예시 부활 대기(초)
+    death_respawn_sec: [15, 30, 50]
 
 prior_g:                         # 비교 기준선 전용
   w_alive: 0.30
