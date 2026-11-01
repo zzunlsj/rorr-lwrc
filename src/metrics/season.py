@@ -9,7 +9,7 @@ LwRC+_i           = 100 × rate_i / denom(scope, pos_i),  pg_i = (rate_i − den
   출력 `lwrc`·`c`·`d`·`risk`는 자르지 않은 합.
 - 분모 prior 수축: 적용하지 않는다. scope·포지션별 분모 표본이 최소 90 선수-게임(First Stand)이라 "표본 부족 구간"이 없다.
 - 선수 포지션 = 그 scope에서 가장 많이 뛴 포지션, 팀 = 가장 많이 뛴 팀. LCK scope는 LCK 팀 소속 선수-게임만.
-- 시리즈 결과(W·L·sw·sl·form)는 Leaguepedia 공식 결과 (raw 누락 게임 포함). `g`는 LwRC가 있는 게임 수.
+- 경기(match) 결과(W·L·form)와 게임 결과(sw·sl)는 Leaguepedia 공식 결과 (raw 누락 게임 포함). `g`는 LwRC가 있는 게임 수.
 
 가중 방식: #9 split-half 신뢰도가 높은 쪽(회귀 main / prior_w)을 웹 출력 정본으로 쓴다 (spec/04 §4.5).
 결과: data/l3/season_player_lwrc_plus.parquet, outputs/web/{players,teams}.json, outputs/validation_report.json
@@ -120,14 +120,14 @@ def bench_direction(p: pl.DataFrame, min_games: int) -> dict:
 
 
 def series_results(scope_games: pl.DataFrame) -> pl.DataFrame:
-    """Leaguepedia 공식 결과로 팀별 시리즈·게임 결과. scope_games: game_id 목록 (우리 데이터)."""
+    """Leaguepedia 공식 결과로 팀별 경기(match)·게임 결과. scope_games: game_id 목록 (우리 데이터)."""
     lp = pl.read_csv(MANIFEST / "leaguepedia_games_2026.csv")
     tl = pl.read_csv(MANIFEST / "team_leagues_2026.csv", schema_overrides={"esports_team_id": pl.Utf8})
     name_to_code = {n: c for c, names in tl.select("team_code", "lp_team").iter_rows() for n in names.split(" / ")}
     g = pl.read_parquet(L1 / "games" / "**" / "*.parquet").select("game_id", "platform_game_id")
     matches = scope_games.join(g, on="game_id").join(lp, on="platform_game_id")["lp_match_id"].unique()
     games = lp.filter(pl.col("lp_match_id").is_in(matches.implode()) & pl.col("winner").is_not_null())
-    # MatchScheduleGame.Winner: 1 = 블루, 2 = 레드 (시리즈 team1/team2가 아님 — normalize.build_l1과 같은 해석)
+    # MatchScheduleGame.Winner: 1 = 블루, 2 = 레드 (경기 team1/team2가 아님 — normalize.build_l1과 같은 해석)
     games = games.with_columns(pl.when(pl.col("winner") == 1).then(pl.col("blue")).otherwise(pl.col("red")).alias("w"),
                                pl.when(pl.col("winner") == 1).then(pl.col("red")).otherwise(pl.col("blue")).alias("l"))
     rows = []
@@ -202,7 +202,7 @@ def main() -> None:
                 .with_columns(pl.col("ix_f").round(0).cast(pl.Int64).alias("ix"), (pl.col("_pg") / pl.col("g")).round(0).cast(pl.Int64).alias("pg"),
                               (pl.col("sw") - pl.col("sl")).alias("sd"), (pl.col("sw") / (pl.col("sw") + pl.col("sl"))).alias("wr"),
                               pl.lit(scope).alias("scope")))
-        assert team["W"].null_count() == 0, f"{scope}: 시리즈 결과 없는 팀"
+        assert team["W"].null_count() == 0, f"{scope}: 경기 결과 없는 팀"
         teams_web.append(team)
 
     season = pl.concat(players_all).with_columns(pl.lit(SPEC_VERSION).alias("spec_version"), pl.lit(data_snapshot()).alias("data_snapshot"))

@@ -42,7 +42,7 @@
 | SUP | Duro (GEN) 117 | Keria (T1) 112 | Delight (HLE) 109 |
 
 팀 LwRC+ (LCK): GEN 117, T1 106, HLE 106, DK 101, KT 97, BFX 96, BRO 96, NS 95, KRX 93, DNS 88.
-~~게임 승률 순위와 다르다 (예: DK 승률 1위, LwRC+ 4위).~~ **정정 (2026-11-01)**: 이 문장은 시리즈 집계 버그(Leaguepedia `winner`를 블루/레드가 아니라 team1/team2로 읽음)로 생긴 잘못된 승률에 근거했다. 수정 후 LCK 게임 승률은 GEN 74%로 1위이며 LwRC+ 순위와 대체로 같은 방향이다. LwRC+는 퍼포먼스 지표이므로 승률과 다를 수 있다 (결정 1).
+~~게임 승률 순위와 다르다 (예: DK 승률 1위, LwRC+ 4위).~~ **정정 (2026-11-01)**: 이 문장은 경기·게임 전적 집계 버그(Leaguepedia `winner`를 블루/레드가 아니라 team1/team2로 읽음)로 생긴 잘못된 승률에 근거했다. 수정 후 LCK 게임 승률은 GEN 74%로 1위이며 LwRC+ 순위와 대체로 같은 방향이다. LwRC+는 퍼포먼스 지표이므로 승률과 다를 수 있다 (결정 1).
 
 ## 3. #10 벤치 방향성 — 혼재
 
@@ -69,8 +69,8 @@
 2. **분모 prior 수축**: 적용하지 않았다. scope·포지션별 분모 표본이 최소 90 선수-게임(First Stand)이라 사양의 "표본 부족 구간"이 없다.
 3. **선수 포지션·팀**: scope에서 가장 많이 뛴 포지션·팀이다. 복수 포지션 선수는 0명이다. LCK scope는 LCK 팀 소속 선수-게임만 넣었다.
 4. **lg**: Leaguepedia 2026 지역 리그 참가 기록 (LCK·LPL·LEC·LCS·CBLOL·LCP). 개명 팀 2개(BRION → HANJIN BRION, DRX → Kiwoom DRX)는 이름을 묶었다.
-5. **시리즈 결과(W·L·sw·sl·form)**: Leaguepedia 공식 결과다. (2026-11-01 정정: `winner` 1/2 = 블루/레드로 해석 — 최초 산출은 team1/team2로 읽어 약 절반의 게임 승패가 뒤바뀌었다)
-   - raw 누락 게임(T1 vs DK 8/14 3세트)이 포함돼, T1·DK는 `sw + sl = g + 1`이다 (lck·lck_s3·all).
+5. **경기·게임 결과(W·L·sw·sl·form)**: Leaguepedia 공식 결과다. (2026-11-01 정정: `winner` 1/2 = 블루/레드로 해석 — 최초 산출은 team1/team2로 읽어 약 절반의 게임 승패가 뒤바뀌었다)
+   - raw 누락 게임(T1 vs DK 8/14 경기의 게임 3)이 포함돼, T1·DK는 `sw + sl = g + 1`이다 (lck·lck_s3·all).
    - form = 최근 5경기(오래된 → 최근 순).
 6. **players.json 추가 필드**: `c_gold`(실현 골드)·`c_pie`(가속 C 배분)를 함께 넣었다. 스키마가 추가 필드를 허용하며, 성분 분리 표시용이다 (Step 5 권장).
 

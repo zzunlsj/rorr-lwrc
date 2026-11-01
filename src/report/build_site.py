@@ -29,7 +29,7 @@ def main() -> None:
     meta = {"min_games_for_ranking": cfg["season"]["min_games_for_ranking"],
             "games_by_tournament": dict(games.sort("tournament").iter_rows()),
             "notes": ["Worlds는 진행 중 — 수령분까지만 반영 (11/15 이후 갱신 예정)",
-                      "T1 vs DK 8/14 3세트는 raw 누락으로 미반영 (시리즈 승패에는 포함)"]}
+                      "T1 vs DK 8/14 경기의 게임 3은 raw 누락으로 미반영 (경기·게임 전적에는 포함)"]}
     (SITE_DATA / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     print(f"site/data 갱신: {sum(meta['games_by_tournament'].values())}게임")
 

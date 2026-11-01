@@ -89,6 +89,6 @@ git add site/data && git commit -m "데이터 갱신" && git push   # Pages 자�
 ## 5. 남은 항목
 
 1. #10 서폿·미드 역방향 원인 분석
-2. Worlds 잔여분 + 누락 1게임(T1 vs DK 8/14 3세트) 수령 후 재실행 (11/15 이후)
+2. Worlds 잔여분 + 누락 1게임(T1 vs DK 8/14 경기의 게임 3) 수령 후 재실행 (11/15 이후)
 3. 추가 지표 범위 (PCI+, MapPressure, WPA — CLAUDE.md §9-4)
 4. 블로그·웹 문구 수정 (`docs/decisions.md` §3, 저장소 밖)
