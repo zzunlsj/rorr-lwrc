@@ -15,6 +15,8 @@
 - G(END) := y(END) (spec/01 §1.4). 마지막 틱의 G는 관측 레이블로 바꿔 쓴다.
 - 속도형 (결정 27): G = 현재 골드 + V(앞으로 10분 기대 수입). 실현 골드는 클러스터·드리프트 모두 번 선수 본인에게,
   클러스터 파이는 ΔV(= ΔG − 팀 실현 골드)에서 Risk·시간항·결정적 감쇠를 뺀 잔여로 만든다. C = 우리 가속, D = 상대 감속.
+- D 파이 (결정 30): 상대 감속 전체 = max(−(ΔV_opp − 시간항_opp − 감쇠항_opp), 0). 상대 데스 비용도 포함한다
+  (상대 Risk는 그대로 상대 선수에게). 결정 27 원안(데스 비용 제외)은 `d_pie_excl_death`로 함께 남긴다.
 - 결정적 감쇠 (결정 28): 부활 대기·버프 잔여의 초당 감소와 부활(생존 +1)은 사건 없이 시간만으로 일어난다.
   사건 가치는 사건 순간에 매기므로(Risk·버프 처치), 이 몫은 시간항과 함께 팀 계정으로 보낸다.
 - Risk는 선형 G이므로 Δx · β (게임의 fold 모델): 생존 −1, 부활 대기 +respawn_timer, 상대 골드 +현상금 (spec/03 §3.1).
@@ -183,13 +185,14 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], en
     for j, ((s_ms, e_ms), (i_s, i_e)) in enumerate(zip(spans, cl)):
         sj = seeds.filter(pl.col("k") == j)
         real = realize(i_s, i_e, "cluster")
-        resid, legacy, base = {}, {}, {}
+        resid, decel, legacy, base = {}, {}, {}, {}
         for s in SIDES:
             dG = G[s][i_e] - G[s][i_s]
             tt = TT[s][i_e] - TT[s][i_s]
             dec = DEC[s][i_e] - DEC[s][i_s]
             rk = float(deaths.filter((pl.col("k") == j) & (pl.col("victim_team") == s))["risk"].sum())
             resid[s] = dG - real[s] - rk - tt - dec
+            decel[s] = resid[s] + rk                        # 데스 비용 포함 감속 (ΔV − 시간항 − 감쇠항) → D 파이 (결정 30)
             legacy[s] = dG - rk - tt                        # 기존 ΔG 파이 (비교 기준선)
             base[s] = {"dG": dG, "gold_sum": real[s], "dV": dG - real[s], "time_term": tt, "decay_term": dec, "risk_sum": rk}
         for s in SIDES:
@@ -198,7 +201,8 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], en
                 "len_s": (e_ms - s_ms) / 1000, "n_seeds": sj.height,
                 "n_kills": int((sj["kind"] == "kill").sum()), "n_buildings": int((sj["kind"] == "building").sum()),
                 "n_epics": int((sj["kind"] == "epic").sum()),
-                **base[s], "resid": resid[s], "c_pie": max(resid[s], 0.0), "d_pie": max(-resid[opp(s)], 0.0),
+                **base[s], "resid": resid[s], "c_pie": max(resid[s], 0.0), "d_pie": max(-decel[opp(s)], 0.0),
+                "d_pie_excl_death": max(-resid[opp(s)], 0.0),       # 결정 27 원안 (비교 기준선)
                 "team_acct": min(resid[s], 0.0) + base[s]["time_term"] + base[s]["decay_term"],
                 "c_pie_legacy": max(legacy[s], 0.0), "d_pie_legacy": max(-legacy[opp(s)], 0.0),
             })
@@ -219,7 +223,7 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], en
                                 "gold_drift": [v["drift"] for v in realized_player.values()]})
 
     # 자팀 항등식: 실현 골드 + ΣC파이 + ΣRisk + 팀 계정 = G(END) − G(0)
-    # D 교차검증: 우리 D 파이 총량 = 상대 클러스터 잔여의 음수 부분 총량
+    # D 교차검증: 우리 D 파이 총량 = 상대 클러스터 (잔여 + 데스 Risk)의 음수 부분 총량 (결정 30)
     summ = []
     for s in SIDES:
         c = clusters.filter(pl.col("side") == s)
@@ -235,7 +239,7 @@ def build_timeline(meta: dict, cfg: dict, coefs: dict[str, dict[str, float]], en
                      "decay_term_cluster": float(c["decay_term"].sum()),
                      "team_acct_drift": float(d["team_acct"].sum()),
                      "identity_resid": parts - total,
-                     "d_cross_resid": float(c["d_pie"].sum() + co["resid"].clip(upper_bound=0).sum()),
+                     "d_cross_resid": float(c["d_pie"].sum() + (co["resid"] + co["risk_sum"]).clip(upper_bound=0).sum()),
                      "c_pie_legacy": float(c["c_pie_legacy"].sum()), "d_pie_legacy": float(c["d_pie_legacy"].sum())})
     cluster_ms = sum(t[i_e] - t[i_s] for i_s, i_e in cl)
     lens = np.array([(e - s) / 1000 for s, e in spans])

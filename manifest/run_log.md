@@ -129,3 +129,13 @@
 | `metrics.season` | scope 8개 × 변형 4개, split-half 부트스트랩 200회 포함 **1초** |
 | 출력 | `outputs/web/players.json` 586행 (244KB), `teams.json` 106행 (24KB), `outputs/validation_report.json`, `data/l3/season_player_lwrc_plus.parquet` — 스키마 검증 통과 |
 | 정본 가중 | 회귀 (split-half 0.469 vs prior 0.461) |
+
+## 결정 30 반영 재실행 — D에 상대 데스 감속 포함 (2026-11-01)
+
+| 항목 | 값 |
+|---|---|
+| `features.timeline` | 678게임, 5.3초, 메모리 피크 0.20GB |
+| `features.alloc_features` · `alloc_train` | 4.9초 · 1.8초 (OOS R² 0.633, 변화 없음 — 회귀 목표 Swing은 D 정의와 무관) |
+| `metrics.game_lwrc` | 8.3초, 항등식 미통과 0, 최대 잔차 2.9e-11 |
+| `metrics.season` · `metrics.gold` · `report.build_site` | 1.6초 · 3.0초 · 0.1초. 정본 가중 = 회귀 (split-half 0.474 vs prior 0.466) |
+| `report.compare_kill_d` | A·B 비교 수치 재현 (D 총량 467만 → 1,493만) |
