@@ -26,10 +26,14 @@ def main() -> None:
     games = (pl.scan_parquet(L3 / "game_player_lwrc" / "**" / "*.parquet", hive_partitioning=False)
              .select("tournament", "game_id").unique().group_by("tournament").agg(pl.len().alias("games"))
              .collect())
+    inc = json.loads((OUTPUTS / "web" / "teams.json").read_text())["incomplete_matches"]["all"]
+    inc_txt = ", ".join(f"{' vs '.join(m['teams'])} {m['first_game_utc'][5:10].replace('-', '/')} (raw {m['raw_games']}/{m['played']}게임)"
+                        for m in inc)
     meta = {"min_games_for_ranking": cfg["season"]["min_games_for_ranking"],
             "games_by_tournament": dict(games.sort("tournament").iter_rows()),
             "notes": ["Worlds는 진행 중 — 수령분까지만 반영 (11/15 이후 갱신 예정)",
-                      "T1 vs DK 8/14 경기의 게임 3은 raw 누락으로 미반영 (경기·게임 전적에는 포함)"]}
+                      "경기·게임 전적은 raw 기준: 게임 전적 = raw 게임 승패, 경기 전적·최근 5경기 = raw에 게임이 모두 있는 경기만"]
+                     + ([f"raw에 일부 게임만 있어 경기 전적·최근 5경기에서 뺀 경기: {inc_txt}"] if inc else [])}
     (SITE_DATA / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     print(f"site/data 갱신: {sum(meta['games_by_tournament'].values())}게임")
 

@@ -1,6 +1,6 @@
 {
  "version": "lwrc_v1.0-rev",
- "generated_at": "2026-11-01T07:20:19+00:00",
+ "generated_at": "2026-11-01T07:38:00+00:00",
  "data_snapshot": "8eb212cb109c4bbe",
  "source": "stats_update totalGold (게임 내 관측값만)",
  "gold_lane_minute": 15,
@@ -6279,7 +6279,7 @@
    "scope": "lck_s2",
    "player_id": "4f447154-fd89-524c-8df8-2f805f17af67",
    "name": "Taeyoon",
-   "team": "NS",
+   "team": "BFX",
    "lg": "LCK",
    "role": "BOT",
    "g": 40,

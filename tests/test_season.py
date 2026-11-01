@@ -49,3 +49,22 @@ def test_leaguepedia_winner_is_blue_red_side():
     j = g.join(lp, on="platform_game_id")
     assert j.height > 0
     assert ((j["winner"] == 1) == (j["winning_team"] == 100)).all()
+
+
+def test_match_results_count_only_matches_complete_in_raw():
+    from metrics.season import match_results
+    x = pl.DataFrame({  # m1: A 2-0 (완결), m2: 1-1이지만 실제로는 3게임 (raw 미완)
+        "game_id": ["g1", "g1", "g2", "g2", "g3", "g3", "g4", "g4"],
+        "match_id": ["m1"] * 4 + ["m2"] * 4,
+        "team_code": ["A", "B"] * 4, "team_id": [100, 200] * 4,
+        "winning_team": [100, 100, 200, 200, 100, 100, 200, 200],
+        "game_start_utc": ["2026-01-01", "2026-01-01", "2026-01-02", "2026-01-02", "2026-02-01", "2026-02-01", "2026-02-02", "2026-02-02"]})
+    x = x.with_columns(pl.when(pl.col("game_id") == "g2").then(pl.when(pl.col("team_code") == "A").then(200).otherwise(100))
+                       .otherwise(pl.col("team_id")).alias("team_id"))   # g2: 진영 교체, A가 레드에서 승
+    played = pl.DataFrame({"match_id": ["m1", "m2"], "lp_match_id": ["L1", "L2"], "played": [2, 3]})
+    res, inc = match_results(x, played)
+    r = {d["team"]: d for d in res.to_dicts()}
+    assert (r["A"]["W"], r["A"]["L"], r["A"]["form"]) == (1, 0, "W")
+    assert (r["B"]["W"], r["B"]["L"], r["B"]["form"]) == (0, 1, "L")
+    assert (r["A"]["sw"], r["A"]["sl"]) == (3, 1)          # 게임 전적은 미완 경기의 raw 게임도 센다
+    assert [m["lp_match_id"] for m in inc] == ["L2"] and inc[0]["raw_games"] == 2

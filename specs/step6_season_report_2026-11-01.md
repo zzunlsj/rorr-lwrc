@@ -70,7 +70,7 @@
 3. **선수 포지션·팀**: scope에서 가장 많이 뛴 포지션·팀이다. 복수 포지션 선수는 0명이다. LCK scope는 LCK 팀 소속 선수-게임만 넣었다.
 4. **lg**: Leaguepedia 2026 지역 리그 참가 기록 (LCK·LPL·LEC·LCS·CBLOL·LCP). 개명 팀 2개(BRION → HANJIN BRION, DRX → Kiwoom DRX)는 이름을 묶었다.
 5. **경기·게임 결과(W·L·sw·sl·form)**: Leaguepedia 공식 결과다. (2026-11-01 정정: `winner` 1/2 = 블루/레드로 해석 — 최초 산출은 team1/team2로 읽어 약 절반의 게임 승패가 뒤바뀌었다)
-   - raw 누락 게임(T1 vs DK 8/14 경기의 게임 3)이 포함돼, T1·DK는 `sw + sl = g + 1`이다 (lck·lck_s3·all).
+   - ~~raw 누락 게임(T1 vs DK 8/14 경기의 게임 3)이 포함돼, T1·DK는 `sw + sl = g + 1`이다.~~ **변경 (2026-11-01 Jun)**: 경기·게임 전적을 raw 기준으로 바꿨다. 게임 전적 = raw 게임 승패(`sw + sl = g`), 경기 전적·최근 5경기 = raw에 게임이 모두 있는 경기만. 일부만 있는 경기(T1 vs DK 8/14, Worlds R4 TES vs BLG 10/29)는 `incomplete_matches`로 따로 둔다.
    - form = 최근 5경기(오래된 → 최근 순).
 6. **players.json 추가 필드**: `c_gold`(실현 골드)·`c_pie`(가속 C 배분)를 함께 넣었다. 스키마가 추가 필드를 허용하며, 성분 분리 표시용이다 (Step 5 권장).
 

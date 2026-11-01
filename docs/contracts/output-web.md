@@ -52,8 +52,8 @@ Worlds             (worlds)
 | 필드 | 의미 | 산출 |
 |---|---|---|
 | `scope`, `team`, `lg` | | |
-| `W`, `L` | 경기(match — BO1·BO3·BO5) 승패 | 메타의 경기 결과 |
-| `sw`, `sl`, `sd` | 게임 승·패·득실 | |
+| `W`, `L` | 경기(match — BO1·BO3·BO5) 승패 | **raw 기준** — raw에 그 경기의 게임이 모두 있는 경기만 (2026-11-01). 일부만 있는 경기는 최상위 `incomplete_matches`(scope별)로 |
+| `sw`, `sl`, `sd` | 게임 승·패·득실 | raw 게임 승패 (`sw + sl = g`) |
 | `wr` | 게임 승률 | `sw / (sw + sl)` |
 | `form` | 최근 5경기 결과 문자열 (예: `"WWLWL"`) | |
 | `g` | 게임 수 | |
