@@ -23,7 +23,7 @@
           "g": { "type": "integer", "minimum": 0 },
           "minutes": { "type": "number", "minimum": 0 },
           "ix": { "type": "integer", "description": "LwRC+ — 100 x rate / denom(scope, role). Negative allowed." },
-          "pg": { "type": "integer", "description": "Gold +/G — (rate - denom) x minutes / g" },
+          "pg": { "type": "integer", "description": "LwRC +/G (formerly Gold +/G) — (rate - denom) x minutes / g" },
           "lwrc": { "type": "number" },
           "rate": { "type": "number" },
           "c": { "type": "number" },

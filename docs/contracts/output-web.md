@@ -39,7 +39,7 @@ Worlds             (worlds)
 | `g` | 게임 수 | |
 | `minutes` | 플레이 분 | |
 | **`ix`** | **LwRC+** (정수, 단위 없음, 음수 허용) | `100 × rate / denom(scope, role)` |
-| **`pg`** | **Gold +/G** — 포지션 평균 대비 게임당 초과 골드 (정수) | `(rate − denom) × minutes / g` |
+| **`pg`** | **LwRC +/G** (구 표기 Gold +/G) — 포지션 평균 대비 게임당 초과 LwRC, 기대 골드 단위 (정수). 게임 내 실제 골드 +/G(`gold.json`)와 구분 | `(rate − denom) × minutes / g` |
 | `lwrc`, `rate` | 범위 LwRC, 분당 LwRC | `spec/05` §3 |
 | `c`, `d`, `risk` | 채널별 합 | 상세 보기·검증용 |
 | `role_rank`, `role_n` | 같은 scope·포지션 내 LwRC+ 순위 / 대상 수 | `g ≥ min_games_for_ranking` 선수 중, 미달이면 null |
@@ -58,7 +58,7 @@ Worlds             (worlds)
 | `form` | 최근 5경기 결과 문자열 (예: `"WWLWL"`) | |
 | `g` | 게임 수 | |
 | **`ix`** | **팀 LwRC+** | 소속 선수 LwRC+의 **플레이 분 가중 평균** (교체 선수 반영) |
-| `pg` | 팀 Gold +/G | 소속 선수 pg 합 (게임당) |
+| `pg` | 팀 LwRC +/G | 소속 선수 pg 합 (게임당) |
 | `top_role` | 팀 내 LwRC+ 최고 포지션 | |
 
 ## 4. 표시 규칙

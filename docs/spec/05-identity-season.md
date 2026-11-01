@@ -34,7 +34,7 @@ LwRC+_i(scope)    = 100 × rate_i(scope) / denom(scope, pos_i)
 - 표본 부족 구간: 분모는 prior 수축, 극단값은 ±3σ 윈저라이즈.
 - 단위: 숫자만 (`126` = 평균 대비 +26%). **음수 허용**, 바닥 처리 없음.
 
-## 5.4 Gold +/G
+## 5.4 LwRC +/G (구 표기 Gold +/G)
 
 ```
 pg_i(scope) = (rate_i − denom(scope, pos_i)) × 플레이 분_i / 게임 수_i
