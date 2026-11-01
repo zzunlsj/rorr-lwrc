@@ -17,7 +17,7 @@ Step 0에서 아래 필드의 존재 여부·적재율을 **월별·대회별**�
 참고 — 이전 자체 수집본(Riot LiveStats 형식)에서 확인된 형태: 프레임은 `schema_type=gameStat`의 `participants[]`
 (`participantID`, `teamID`, `totalGold`, `level`, `respawnTimer`, `playerName`, `championName`),
 이벤트는 `schema_type=matchEvent`의 `rfc461Schema` (`champion_kill`, `epic_monster_kill`, `building_destroyed`,
-`turret_plate_destroyed`, `champion_kill_special`). `deathRecap`은 `list[{source, casterId, breakdown[]}]` 구조.
+`turret_plate_destroyed`, `champion_kill_special` — 2026 raw에서는 멀티킬·에이스 알림, 결정 26). `deathRecap`은 `list[{source, casterId, breakdown[]}]` 구조.
 2026 raw의 형식은 Step 0에서 확인한다.
 
 ## 2. 상태 피처 확정 목록 — 우리 관점 x(t, side)

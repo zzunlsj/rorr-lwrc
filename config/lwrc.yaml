@@ -28,6 +28,13 @@ prior_g:                         # 비교 기준선 전용
 cluster:
   window_sec: 10
   merge_sec: 10
+  # window_gap = 인접 창 사이 간격 ≤ merge_sec (씨앗 간격 ≤ 2·window + merge). 결정 25
+  merge_rule: window_gap
+  # 결정적 감쇠 (결정 28): 사건 없이 시간만으로 일어나는 상태 변화. 클러스터 잔여에서 빼서 시간항과 함께 팀 계정으로.
+  # decreasing = 틱 간 감소분만 (부활 대기·버프 잔여), increasing = 틱 간 증가분만 (부활로 생존 +1)
+  decay_features:
+    decreasing: [respawn_sum_us, respawn_sum_opp, baron_buff_us, baron_buff_opp, elder_buff_us, elder_buff_opp]
+    increasing: [alive_us, alive_opp]
   warn_len_sec: 180
   # 몬스터 이름은 원본 epic_monster_kill.monsterType 표기 그대로 (대소문자 구분).
   # 공허 유충 = VoidGrub (2026-10-31 확정, 'horde' 명칭 쓰지 않음). atakhan은 원본 표기 미확인.
