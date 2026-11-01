@@ -1,0 +1,17 @@
+{
+ "min_games_for_ranking": 10,
+ "games_by_tournament": {
+  "FirstStand": 45,
+  "LCK_Cup": 125,
+  "LCK_PlayIn_PO": 55,
+  "LCK_R1-2": 204,
+  "LCK_R3-4": 98,
+  "MSI": 71,
+  "Road_to_MSI": 20,
+  "Worlds": 60
+ },
+ "notes": [
+  "Worlds는 진행 중 — 수령분까지만 반영 (11/15 이후 갱신 예정)",
+  "T1 vs DK 8/14 3세트는 raw 누락으로 미반영 (시리즈 승패에는 포함)"
+ ]
+}
