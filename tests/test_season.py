@@ -39,3 +39,13 @@ def test_web_outputs_follow_schema_and_role_average_is_100():
     p = pl.DataFrame(json.loads((WEB / "players.json").read_text())["players"])
     avg = p.group_by("scope", "role").agg(((pl.col("ix") * pl.col("minutes")).sum() / pl.col("minutes").sum()).alias("a"))
     assert avg["a"].is_between(99, 101).all()      # 분 가중 평균 = 100 (정수 반올림·윈저라이즈 오차만)
+
+
+def test_leaguepedia_winner_is_blue_red_side():
+    """MatchScheduleGame.Winner(1/2)는 블루/레드다 — raw 승자와 전 게임 일치해야 한다 (team1/team2로 읽으면 약 49%)."""
+    from common.paths import L1, MANIFEST
+    lp = pl.read_csv(MANIFEST / "leaguepedia_games_2026.csv").filter(pl.col("winner").is_not_null())
+    g = pl.read_parquet(L1 / "games" / "**" / "*.parquet").select("platform_game_id", "winning_team")
+    j = g.join(lp, on="platform_game_id")
+    assert j.height > 0
+    assert ((j["winner"] == 1) == (j["winning_team"] == 100)).all()

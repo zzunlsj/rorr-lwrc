@@ -127,8 +127,9 @@ def series_results(scope_games: pl.DataFrame) -> pl.DataFrame:
     g = pl.read_parquet(L1 / "games" / "**" / "*.parquet").select("game_id", "platform_game_id")
     matches = scope_games.join(g, on="game_id").join(lp, on="platform_game_id")["lp_match_id"].unique()
     games = lp.filter(pl.col("lp_match_id").is_in(matches.implode()) & pl.col("winner").is_not_null())
-    games = games.with_columns(pl.when(pl.col("winner") == 1).then(pl.col("team1")).otherwise(pl.col("team2")).alias("w"),
-                               pl.when(pl.col("winner") == 1).then(pl.col("team2")).otherwise(pl.col("team1")).alias("l"))
+    # MatchScheduleGame.Winner: 1 = 블루, 2 = 레드 (시리즈 team1/team2가 아님 — normalize.build_l1과 같은 해석)
+    games = games.with_columns(pl.when(pl.col("winner") == 1).then(pl.col("blue")).otherwise(pl.col("red")).alias("w"),
+                               pl.when(pl.col("winner") == 1).then(pl.col("red")).otherwise(pl.col("blue")).alias("l"))
     rows = []
     for (mid,), m in games.partition_by(["lp_match_id"], as_dict=True).items():
         wins = m.group_by("w").len()
