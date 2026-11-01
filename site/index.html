@@ -34,11 +34,15 @@ td.ix{font-weight:700}
 tr.detail td{background:var(--bg);text-align:left;white-space:normal;cursor:default}
 .dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 18px;padding:4px 0}
 .dl div span{display:block;color:var(--mute);font-size:12px}
+.dl div span.help{display:inline-flex;font-size:9px}
 .form b{display:inline-block;width:16px;text-align:center;font-size:11px;border-radius:3px;margin-right:2px;color:#fff}
 .form .W{background:var(--pos)}.form .L{background:var(--neg)}
 .meta{color:var(--mute);font-size:12px;margin-top:12px}
 .meta ul{margin:6px 0 0;padding-left:18px}
 .count{color:var(--mute);font-size:12px;margin-left:auto}
+.help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;border:1px solid var(--mute);color:var(--mute);font-size:9px;font-weight:700;line-height:1;cursor:help;vertical-align:1px}
+.help:hover,.help:focus{border-color:var(--acc);color:var(--acc);outline:none}
+#tip{position:fixed;z-index:10;max-width:320px;padding:9px 11px;border-radius:8px;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.5;white-space:pre-line;text-align:left;font-weight:400;box-shadow:0 4px 14px rgba(0,0,0,.2);pointer-events:none}
 #theme{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
 </style>
 </head>
@@ -66,6 +70,7 @@ tr.detail td{background:var(--bg);text-align:left;white-space:normal;cursor:defa
 
 <div class="card"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
 <div class="meta" id="meta"></div>
+<div id="tip" role="tooltip" hidden></div>
 </div>
 
 <script>
@@ -73,29 +78,55 @@ const SCOPES=[["all","전체"],["lck","LCK"],["lck_s1","LCK S1"],["lck_s2","LCK 
 const fmt=(v,d=0)=>v==null?"—":Number(v).toLocaleString("ko-KR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const sgn=v=>v==null?"":v>0?"pos":v<0?"neg":"";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// 도움말 문구 — 정의는 docs/contracts/output-web.md, docs/spec/05 기준
+const HELP={
+  rank:"같은 범위·같은 포지션 안에서 LwRC+ 순위 / 대상 선수 수. 최소 게임 수 이상인 선수만 순위를 매기고, 미달이면 —로 표시한다.",
+  team:"이 범위에서 가장 많이 뛴 팀. 리그 표시는 2026 지역 리그 참가 기록(Leaguepedia) 기준.",
+  role:"이 범위에서 가장 많이 뛴 포지션.",
+  g:"이 범위에서 뛴 게임(판) 수.",
+  ix:"LwRC+ = 100 × 선수 LwRC/분 ÷ 같은 범위·같은 포지션 평균 LwRC/분.\n100이 평균이고, 121이면 평균보다 21% 높다. 음수도 그대로 표시한다.\n선수 퍼포먼스 참고 지표이며, 승리 기여 지표가 아니다.",
+  pg:"Gold +/G = (선수 LwRC/분 − 같은 포지션 평균 LwRC/분) × 플레이 분 ÷ 게임 수.\n평균 선수보다 한 게임에 팀 기대 골드를 몇 골드 더 움직였는지 나타낸다. 실제로 더 번 골드가 아니다.\n골드 단위라서 평균 골드가 큰 포지션(원딜 등)일수록 같은 LwRC+에서도 값이 크다.",
+  rate:"분당 LwRC. LwRC = C 생산 + D 차단 + Risk = 선수가 팀 기대 골드(10분 뒤 팀 골드의 학습 예측 G)를 움직인 양.\n범위 안 선수-게임 값을 ±3σ로 자른 뒤 합 ÷ 플레이 분으로 계산한다.",
+  share:"팀 내 비중 = max(0, 선수 LwRC) ÷ 같은 팀 선수들의 max(0, LwRC) 합.\n분당 값이 아니라 절대량 기준이라 많이 뛴 선수, 골드가 큰 포지션(원딜)일수록 크게 나온다. 골드 기여 기준이다.",
+  tix:"팀 LwRC+ = 소속 선수 LwRC+를 그 팀에서 뛴 분으로 가중 평균한 값. 교체 선수도 뛴 만큼 반영된다.",
+  tpg:"팀 Gold +/G = Σ 소속 선수 (LwRC/분 − 포지션 평균) × 그 팀에서 뛴 분 ÷ 팀 게임 수.\n평균적인 팀보다 한 게임에 팀 기대 골드를 몇 골드 더 움직였는지 나타낸다.",
+  series:"경기(Bo3·Bo5 시리즈) 승–패. Leaguepedia 공식 결과라서 raw가 빠진 게임도 포함된다.",
+  games:"게임(판) 승–패.",
+  wr:"게임 승률 = 게임 승 ÷ (게임 승 + 게임 패).",
+  form:"최근 5경기 시리즈 결과. 왼쪽이 오래된 경기, 오른쪽이 최근 경기.",
+  top:"팀 안에서 LwRC+가 가장 높은 포지션.",
+  lwrc:"이 범위의 LwRC 합 = C 생산 + D 차단 + Risk. 자르지 않은 원값이다.",
+  min:"이 범위에서 뛴 시간(분).",
+  c:"C 생산 = 실현 골드 + 가속 C 배분.",
+  cgold:"본인이 실제로 번 골드. 교전 안팎 모두 번 사람에게 귀속한다.",
+  cpie:"교전 클러스터에서 우리 팀 골드 수입 속도가 빨라진 몫(스노우볼)을, 관여도(딜·어시스트·피해 흡수·교전 존재·시야 제공/차단·CC·보호)에 따라 나눈 값.",
+  d:"D 차단 = 교전에서 상대 팀 골드 수입 속도를 떨어뜨린 몫을 관여도에 따라 나눈 값.",
+  risk:"본인 데스의 비용: 생존 인원 −1, 부활 대기, 상대에게 넘어간 현상금·셧다운. 항상 음수다.",
+};
 const COLS={
   players:[
-    {k:"role_rank",h:"#",f:r=>r.role_rank==null?"—":`${r.role_rank}<span class="tag">/${r.role_n}</span>`},
+    {k:"role_rank",h:"#",t:HELP.rank,f:r=>r.role_rank==null?"—":`${r.role_rank}<span class="tag">/${r.role_n}</span>`},
     {k:"name",h:"선수",l:1,f:r=>`<b>${esc(r.name)}</b>`},
-    {k:"team",h:"팀",l:1,f:r=>`${esc(r.team)} <span class="tag">${esc(r.lg)}</span>`},
-    {k:"role",h:"포지션",l:1},
-    {k:"g",h:"게임"},
-    {k:"ix",h:"LwRC+",c:"ix",f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
-    {k:"pg",h:"Gold +/G",f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
-    {k:"rate",h:"LwRC/분",f:r=>fmt(r.rate,1)},
-    {k:"team_share",h:"팀 내 비중",f:r=>r.team_share==null?"—":fmt(r.team_share,1)+"%"},
+    {k:"team",h:"팀",l:1,t:HELP.team,f:r=>`${esc(r.team)} <span class="tag">${esc(r.lg)}</span>`},
+    {k:"role",h:"포지션",l:1,t:HELP.role},
+    {k:"g",h:"게임",t:HELP.g},
+    {k:"ix",h:"LwRC+",c:"ix",t:HELP.ix,f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
+    {k:"pg",h:"Gold +/G",t:HELP.pg,f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
+    {k:"rate",h:"LwRC/분",t:HELP.rate,f:r=>fmt(r.rate,1)},
+    {k:"team_share",h:"팀 내 비중",t:HELP.share,f:r=>r.team_share==null?"—":fmt(r.team_share,1)+"%"},
   ],
   teams:[
     {k:"team",h:"팀",l:1,f:r=>`<b>${esc(r.team)}</b>`},
-    {k:"lg",h:"리그",l:1},
-    {k:"ix",h:"팀 LwRC+",c:"ix",f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
-    {k:"pg",h:"Gold +/G",f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
-    {k:"W",h:"시리즈",f:r=>`${r.W}–${r.L}`},
-    {k:"sw",h:"게임",f:r=>`${r.sw}–${r.sl}`},
-    {k:"wr",h:"게임 승률",f:r=>r.wr==null?"—":fmt(r.wr*100,1)+"%"},
-    {k:"form",h:"최근 5",l:1,f:r=>`<span class="form">${[...(r.form||"")].map(c=>`<b class="${c}">${c}</b>`).join("")}</span>`},
-    {k:"top_role",h:"최고 포지션",l:1},
+    {k:"lg",h:"리그",l:1,t:HELP.team},
+    {k:"ix",h:"팀 LwRC+",c:"ix",t:HELP.tix,f:r=>`<span class="${sgn(r.ix-100)}">${fmt(r.ix)}</span>`},
+    {k:"pg",h:"Gold +/G",t:HELP.tpg,f:r=>`<span class="${sgn(r.pg)}">${r.pg>0?"+":""}${fmt(r.pg)}</span>`},
+    {k:"W",h:"시리즈",t:HELP.series,f:r=>`${r.W}–${r.L}`},
+    {k:"sw",h:"게임",t:HELP.games,f:r=>`${r.sw}–${r.sl}`},
+    {k:"wr",h:"게임 승률",t:HELP.wr,f:r=>r.wr==null?"—":fmt(r.wr*100,1)+"%"},
+    {k:"form",h:"최근 5",l:1,t:HELP.form,f:r=>`<span class="form">${[...(r.form||"")].map(c=>`<b class="${c}">${c}</b>`).join("")}</span>`},
+    {k:"top_role",h:"최고 포지션",l:1,t:HELP.top},
   ]};
+const q=t=>t?`<span class="help" tabindex="0" role="button" aria-label="도움말" data-help="${esc(t)}">?</span>`:"";
 const st={view:"players",scope:"all",q:"",role:"",lg:"",ming:10,sort:{players:["ix",-1],teams:["ix",-1]},open:null};
 let D={};
 
@@ -112,10 +143,10 @@ function rows(){
 }
 function detail(r){
   if(st.view==="players")return `<div class="dl">
-    <div><span>LwRC (합)</span>${fmt(r.lwrc)}</div><div><span>플레이 분</span>${fmt(r.minutes,1)}</div>
-    <div><span>C 생산</span>${fmt(r.c)}</div><div><span>　실현 골드</span>${fmt(r.c_gold)}</div><div><span>　가속 C 배분</span>${fmt(r.c_pie)}</div>
-    <div><span>D 차단</span>${fmt(r.d)}</div><div><span>Risk 데스</span><b class="neg">${fmt(r.risk)}</b></div>
-    <div><span>팀 내 비중</span>${r.team_share==null?"—":fmt(r.team_share,1)+"% (골드 기여 기준)"}</div></div>`;
+    <div><span>LwRC (합)${q(HELP.lwrc)}</span>${fmt(r.lwrc)}</div><div><span>플레이 분${q(HELP.min)}</span>${fmt(r.minutes,1)}</div>
+    <div><span>C 생산${q(HELP.c)}</span>${fmt(r.c)}</div><div><span>　실현 골드${q(HELP.cgold)}</span>${fmt(r.c_gold)}</div><div><span>　가속 C 배분${q(HELP.cpie)}</span>${fmt(r.c_pie)}</div>
+    <div><span>D 차단${q(HELP.d)}</span>${fmt(r.d)}</div><div><span>Risk 데스${q(HELP.risk)}</span><b class="neg">${fmt(r.risk)}</b></div>
+    <div><span>팀 내 비중${q(HELP.share)}</span>${r.team_share==null?"—":fmt(r.team_share,1)+"% (골드 기여 기준)"}</div></div>`;
   const p=D.players.players.filter(x=>x.scope===st.scope&&x.team===r.team).sort((a,b)=>b.minutes-a.minutes);
   return `<div class="dl">${p.map(x=>`<div><span>${esc(x.role)} · ${x.g}게임</span><b>${esc(x.name)}</b> ${fmt(x.ix)}</div>`).join("")}</div>`;
 }
@@ -124,7 +155,7 @@ function render(){
   document.querySelectorAll("#scope button").forEach(b=>b.classList.toggle("on",b.dataset.s===st.scope));
   document.getElementById("role").style.display=st.view==="players"?"":"none";
   const cols=COLS[st.view],[sk,sd]=st.sort[st.view];
-  document.getElementById("th").innerHTML="<tr>"+cols.map(c=>`<th data-k="${c.k}" class="${c.l?"l":""} ${c.k===sk?"sorted":""}">${c.h}${c.k===sk?(sd<0?" ▾":" ▴"):""}</th>`).join("")+"</tr>";
+  document.getElementById("th").innerHTML="<tr>"+cols.map(c=>`<th data-k="${c.k}" class="${c.l?"l":""} ${c.k===sk?"sorted":""}">${c.h}${q(c.t)}${c.k===sk?(sd<0?" ▾":" ▴"):""}</th>`).join("")+"</tr>";
   const r=rows();
   document.getElementById("tb").innerHTML=r.map((x,i)=>{
     const id=st.view==="players"?x.player_id:x.team, row=`<tr data-id="${esc(id)}">`+cols.map(c=>`<td class="${c.l?"l":""} ${c.c||""}">${c.f?c.f(x):esc(x[c.k])}</td>`).join("")+"</tr>";
@@ -144,6 +175,18 @@ function init(){
   }
   document.getElementById("view").onclick=e=>{if(e.target.dataset.v){st.view=e.target.dataset.v;st.open=null;render()}};
   document.getElementById("scope").onclick=e=>{if(e.target.dataset.s){st.scope=e.target.dataset.s;st.open=null;render()}};
+  // 도움말: 마우스 오버·키보드 포커스로 표시, 터치는 탭으로 토글. 정렬·행 펼침으로 번지지 않게 막는다.
+  const tip=document.getElementById("tip");
+  const show=el=>{tip.textContent=el.dataset.help;tip.hidden=false;const b=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
+    tip.style.left=Math.max(8,Math.min(innerWidth-w-8,b.left+b.width/2-w/2))+"px";
+    tip.style.top=(b.bottom+8+h>innerHeight?b.top-h-8:b.bottom+8)+"px";tip._el=el};
+  const hide=()=>{tip.hidden=true;tip._el=null};
+  document.addEventListener("mouseover",e=>{const el=e.target.closest(".help");if(el)show(el)});
+  document.addEventListener("mouseout",e=>{if(e.target.closest(".help"))hide()});
+  document.addEventListener("focusin",e=>{const el=e.target.closest(".help");if(el)show(el)});
+  document.addEventListener("focusout",e=>{if(e.target.closest(".help"))hide()});
+  document.addEventListener("click",e=>{const el=e.target.closest(".help");if(el){e.stopPropagation();tip._el===el&&!tip.hidden?hide():show(el)}else hide()},true);
+  addEventListener("scroll",hide,true);
   document.getElementById("th").onclick=e=>{const k=e.target.closest("th")?.dataset.k;if(!k)return;const s=st.sort[st.view];st.sort[st.view]=s[0]===k?[k,-s[1]]:[k,typeof rows()[0]?.[k]==="string"?1:-1];render()};
   document.getElementById("tb").onclick=e=>{const tr=e.target.closest("tr[data-id]");if(!tr)return;st.open=st.open===tr.dataset.id?null:tr.dataset.id;render()};
   document.getElementById("theme").onclick=()=>{const h=document.documentElement,dark=h.dataset.theme?h.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;h.dataset.theme=dark?"light":"dark"};
